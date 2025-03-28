@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table as MuiTable,
   TableBody,
@@ -19,28 +19,86 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  TextField,
-  IconButton,
 } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check'; // Bu sətir düzgün olmalıdır
 
-function Table({ data, onOpenModal, onDelete, onUpdate }) {
+function Table({ onOpenModal, onDelete }) {
   const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
   const currentDate = new Date();
   const currentMonthIndex = currentDate.getMonth();
   const currentMonth = months[currentMonthIndex];
+  const currentYear = currentDate.getFullYear();
+  
+  const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+  
+  const [tableData, setTableData] = useState([]);
   const [selectedMonths, setSelectedMonths] = useState([currentMonth]);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
   const [openDialog, setOpenDialog] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-  const [editCell, setEditCell] = useState(null);
-  const [editValue, setEditValue] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const isAdmin = true;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const monthParams = selectedMonths
+          .map(month => `Months=${months.indexOf(month) + 1}`)
+          .join('&');
+        const url = `http://192.168.100.123:5051/api/StrategyEvents/GetAll?${monthParams}&Year=${selectedYear}`;
+
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Unauthorized: Invalid or expired token');
+          }
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        setTableData(result.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [selectedMonths, selectedYear]);
 
   const handleMonthChange = (event) => {
     const value = event.target.value;
     const newSelection = typeof value === 'string' ? value.split(',') : value;
     setSelectedMonths(newSelection.length === 0 ? [currentMonth] : newSelection);
+  };
+
+  const handleSelectAllMonths = (event) => {
+    event.stopPropagation(); // Prevent MenuItem click from triggering
+    if (event.target.checked) {
+      setSelectedMonths(months); // Select all months
+    } else {
+      setSelectedMonths([currentMonth]); // Revert to default (current month)
+    }
+  };
+
+  const handleYearChange = (event) => {
+    setSelectedYear(event.target.value);
   };
 
   const handleDeleteClick = (id) => {
@@ -59,67 +117,70 @@ function Table({ data, onOpenModal, onDelete, onUpdate }) {
     setDeleteId(null);
   };
 
-  const handleDoubleClick = (id, field, initialValue) => {
-    if (isAdmin || field.startsWith('status.')) {
-      setEditCell({ id, field });
-      setEditValue(initialValue);
-    }
-  };
+  const isAllSelected = selectedMonths.length === months.length;
 
-  const handleEditChange = (e) => {
-    setEditValue(e.target.value);
-  };
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-  const handleEditConfirm = (row) => {
-    const { id, field } = editCell;
-    let updatedRow = { ...row };
-
-    if (field.startsWith('status.')) {
-      const month = field.split('.')[1];
-      updatedRow.status = { ...row.status, [month]: editValue };
-    } else {
-      updatedRow[field] = editValue;
-    }
-
-    onUpdate(updatedRow);
-    setEditCell(null);
-    setEditValue('');
-  };
-
-  const handleEditCancel = () => {
-    setEditCell(null);
-    setEditValue('');
-  };
-
-  const handleKeyPress = (e, row) => {
-    if (e.key === 'Enter') {
-      handleEditConfirm(row);
-    } else if (e.key === 'Escape') {
-      handleEditCancel();
-    }
-  };
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel id="month-select-label">Aylar</InputLabel>
-          <Select
-            labelId="month-select-label"
-            multiple
-            value={selectedMonths}
-            onChange={handleMonthChange}
-            renderValue={(selected) => selected.join(', ')}
-            label="Aylar"
-          >
-            {months.map((month) => (
-              <MenuItem key={month} value={month}>
-                <Checkbox checked={selectedMonths.indexOf(month) > -1} />
-                <ListItemText primary={month} />
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '20px',
+        gap: '20px' 
+      }}>
+        <div style={{ display: 'flex', gap: '20px' }}>
+        <FormControl sx={{ minWidth: 120 }}>
+            <InputLabel id="year-select-label">İl</InputLabel>
+            <Select
+              labelId="year-select-label"
+              value={selectedYear}
+              onChange={handleYearChange}
+              label="İl"
+            >
+              {years.map((year) => (
+                <MenuItem key={year} value={year}>
+                  {year}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel id="month-select-label">Aylar</InputLabel>
+            <Select
+              labelId="month-select-label"
+              multiple
+              value={selectedMonths}
+              onChange={handleMonthChange}
+              renderValue={(selected) => selected.join(', ')}
+              label="Aylar"
+            >
+              <MenuItem onClick={(e) => e.stopPropagation()}>
+                <Checkbox
+                  checked={isAllSelected}
+                  onChange={handleSelectAllMonths}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <ListItemText primary="Hamısını seç" />
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              {months.map((month) => (
+                <MenuItem key={month} value={month}>
+                  <Checkbox checked={selectedMonths.indexOf(month) > -1} />
+                  <ListItemText primary={month} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+         
+        </div>
+
         <Button variant="contained" onClick={onOpenModal}>
           Əlavə Et
         </Button>
@@ -130,7 +191,7 @@ function Table({ data, onOpenModal, onDelete, onUpdate }) {
           <TableHead>
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', minWidth: 80 }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', minWidth: 200 }}>Tədbir</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', minWidth: 200 }}>Strategiya üzrə tədbirlər</TableCell>
               <TableCell sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', minWidth: 150 }}>İcraçılar</TableCell>
               <TableCell sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', minWidth: 120 }}>Başlama Tarixi</TableCell>
               <TableCell sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', minWidth: 120 }}>Bitmə Tarixi</TableCell>
@@ -140,90 +201,44 @@ function Table({ data, onOpenModal, onDelete, onUpdate }) {
                   key={month}
                   sx={{ fontWeight: 'bold', borderRight: '1px solid #e0e0e0', minWidth: 200 }}
                 >
-                  {month} Statusu
+                  {month} Qeyd
                 </TableCell>
               ))}
               <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>Əməliyyatlar</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.map((row) => (
+            {tableData.map((row) => (
               <TableRow key={row.id}>
-                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{row.id}</TableCell>
-                <TableCell
-                  sx={{ borderRight: '1px solid #e0e0e0' }}
-                  onDoubleClick={() => handleDoubleClick(row.id, 'event', row.event)}
-                >
-                  {editCell?.id === row.id && editCell?.field === 'event' ? (
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <TextField
-                        value={editValue}
-                        onChange={handleEditChange}
-                        onKeyDown={(e) => handleKeyPress(e, row)}
-                        autoFocus
-                        fullWidth
-                        size="small"
-                      />
-                      <IconButton size="small" onClick={() => handleEditConfirm(row)}>
-                        <CheckIcon fontSize="small" />
-                      </IconButton>
-                    </div>
-                  ) : (
-                    row.event
-                  )}
-                </TableCell>
-                <TableCell
-                  sx={{ borderRight: '1px solid #e0e0e0' }}
-                  onDoubleClick={() => handleDoubleClick(row.id, 'executors', row.executors)}
-                >
-                  {editCell?.id === row.id && editCell?.field === 'executors' ? (
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <TextField
-                        value={editValue}
-                        onChange={handleEditChange}
-                        onKeyDown={(e) => handleKeyPress(e, row)}
-                        autoFocus
-                        fullWidth
-                        size="small"
-                      />
-                      <IconButton size="small" onClick={() => handleEditConfirm(row)}>
-                        <CheckIcon fontSize="small" />
-                      </IconButton>
-                    </div>
-                  ) : (
-                    row.executors
-                  )}
-                </TableCell>
-                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{row.startDate}</TableCell>
-                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{row.endDate}</TableCell>
+                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{row.id.slice(0, 8)}</TableCell>
+                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>{row.title}</TableCell>
                 <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
-                  {(row.progress * 100).toFixed(0)}%
+                  {row.executors.map(exec => exec.name).join(', ')}
                 </TableCell>
-                {selectedMonths.map((month) => (
-                  <TableCell
-                    key={month}
-                    sx={{ borderRight: '1px solid #e0e0e0' }}
-                    onDoubleClick={() => handleDoubleClick(row.id, `status.${month}`, row.status[month] || '')}
-                  >
-                    {editCell?.id === row.id && editCell?.field === `status.${month}` ? (
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <TextField
-                          value={editValue}
-                          onChange={handleEditChange}
-                          onKeyDown={(e) => handleKeyPress(e, row)}
-                          autoFocus
-                          fullWidth
-                          size="small"
-                        />
-                        <IconButton size="small" onClick={() => handleEditConfirm(row)}>
-                          <CheckIcon fontSize="small" />
-                        </IconButton>
-                      </div>
-                    ) : (
-                      row.status[month] || 'Məlumat yoxdur'
-                    )}
-                  </TableCell>
-                ))}
+                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
+                  {new Date(row.startDate).toLocaleDateString()}
+                </TableCell>
+                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
+                  {new Date(row.endDate).toLocaleDateString()}
+                </TableCell>
+                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
+                  {isNaN(parseFloat(row.percentage)) ? row.percentage : `${parseFloat(row.percentage)}%`}
+                </TableCell>
+                {selectedMonths.map((month) => {
+                  const monthIndex = months.indexOf(month) + 1;
+                  const matchingNotes = row.notes.filter(n => n.month === monthIndex);
+                  const displayContent = matchingNotes.length > 0 
+                    ? matchingNotes.map(note => note.content).join(';  ')
+                    : 'Məlumat yoxdur';
+                  return (
+                    <TableCell
+                      key={month}
+                      sx={{ borderRight: '1px solid #e0e0e0' }}
+                    >
+                      {displayContent}
+                    </TableCell>
+                  );
+                })}
                 <TableCell>
                   <Button
                     variant="outlined"

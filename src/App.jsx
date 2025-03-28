@@ -1,15 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { staticData as initialData } from './data/staticData';
-import Table from './components/Table';
-import AddDataModal from './components/AddDataModal';
+import Login from './components/Login';
+import TablePage from './components/TablePage';
+import PrivateRoute from './components/PrivateRoute';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const [data, setData] = useState(initialData);
-  const [openModal, setOpenModal] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem('token') || null);
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem('token', token);
+    } else {
+      localStorage.removeItem('token');
+    }
+  }, [token]);
 
   const handleAddData = (newData) => {
     setData((prevData) => [...prevData, newData]);
-    setOpenModal(false);
   };
 
   const handleDelete = (id) => {
@@ -23,22 +33,35 @@ function App() {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Cədvəl</h1>
-      <Table
-        data={data}
-        onOpenModal={() => setOpenModal(true)}
-        onDelete={handleDelete}
-        onUpdate={handleUpdate}
-      />
-      {openModal && (
-        <AddDataModal
-          open={openModal}
-          onClose={() => setOpenModal(false)}
-          onAddData={handleAddData}
+    <Router>
+      <Toaster position="top-right" reverseOrder={false} /> {/* Toast üçün */}
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            token ? (
+              <Navigate to="/table" />
+            ) : (
+              <Login setToken={setToken} />
+            )
+          }
         />
-      )}
-    </div>
+        <Route
+          path="/table"
+          element={
+            <PrivateRoute token={token}>
+              <TablePage
+                data={data}
+                onAddData={handleAddData}
+                onDelete={handleDelete}
+                onUpdate={handleUpdate}
+              />
+            </PrivateRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to={token ? "/table" : "/login"} />} />
+      </Routes>
+    </Router>
   );
 }
 
