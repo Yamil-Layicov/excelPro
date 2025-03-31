@@ -50,8 +50,13 @@ function Table({ onOpenModal, onDelete }) {
           throw new Error('No authentication token found');
         }
 
+        // `monthParams` hesablanarkən 0-cı ayın qarşısını alırıq
         const monthParams = selectedMonths
-          .map(month => `Months=${months.indexOf(month) + 1}`)
+          .map(month => {
+            const monthIndex = months.indexOf(month) + 1;
+            return monthIndex > 0 ? `Months=${monthIndex}` : null; // 0 və ya mənfi dəyərləri çıxarırıq
+          })
+          .filter(param => param !== null) // Null dəyərləri filtr edirik
           .join('&');
         const url = `http://192.168.100.123:5051/api/StrategyEvents/GetAll?${monthParams}&Year=${selectedYear}`;
 
@@ -85,15 +90,16 @@ function Table({ onOpenModal, onDelete }) {
   const handleMonthChange = (event) => {
     const value = event.target.value;
     const newSelection = typeof value === 'string' ? value.split(',') : value;
-    setSelectedMonths(newSelection.length === 0 ? [currentMonth] : newSelection);
+    // Boş seçim olarsa cari ayı saxla, yoxsa yalnız months array-indəki dəyərləri qəbul et
+    setSelectedMonths(newSelection.length === 0 ? [currentMonth] : newSelection.filter(month => months.includes(month)));
   };
 
+  // "Hamısını seç" funksiyası - yalnız months array-indəki dəyərləri seçir
   const handleSelectAllMonths = (event) => {
-    event.stopPropagation(); // Prevent MenuItem click from triggering
     if (event.target.checked) {
-      setSelectedMonths(months); // Select all months
+      setSelectedMonths([...months]); // Yalnız Yanvar-Dekabr (1-12) seçilir
     } else {
-      setSelectedMonths([currentMonth]); // Revert to default (current month)
+      setSelectedMonths([currentMonth]); // Cari aya qayıt
     }
   };
 
@@ -137,7 +143,7 @@ function Table({ onOpenModal, onDelete }) {
         gap: '20px' 
       }}>
         <div style={{ display: 'flex', gap: '20px' }}>
-        <FormControl sx={{ minWidth: 120 }}>
+          <FormControl sx={{ minWidth: 120 }}>
             <InputLabel id="year-select-label">İl</InputLabel>
             <Select
               labelId="year-select-label"
@@ -162,11 +168,12 @@ function Table({ onOpenModal, onDelete }) {
               renderValue={(selected) => selected.join(', ')}
               label="Aylar"
             >
+              {/* "Hamısını seç" yazısına klik edəndə heç nə olmasın */}
               <MenuItem onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   checked={isAllSelected}
-                  onChange={handleSelectAllMonths}
-                  onClick={(e) => e.stopPropagation()}
+                  onChange={handleSelectAllMonths} // Yalnız checkbox-a klik edəndə işləsin
+                  onClick={(e) => e.stopPropagation()} // Klikin yayılmasını dayandır
                 />
                 <ListItemText primary="Hamısını seç" />
               </MenuItem>
@@ -178,7 +185,6 @@ function Table({ onOpenModal, onDelete }) {
               ))}
             </Select>
           </FormControl>
-         
         </div>
 
         <Button variant="contained" onClick={onOpenModal}>
