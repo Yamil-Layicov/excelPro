@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   Modal,
   Box,
-  TextField,
   Button,
   Typography,
   FormControl,
@@ -14,6 +13,7 @@ import {
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import toast from 'react-hot-toast';
+import FormField from './FormField'; 
 
 const style = {
   position: 'absolute',
@@ -44,7 +44,7 @@ function AddDataModal({ open, onClose, onAddData }) {
   });
   const [executors, setExecutors] = useState([]);
   const [error, setError] = useState(null);
-  const [percentageError, setPercentageError] = useState(''); // For percentage validation feedback
+  const [percentageError, setPercentageError] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -82,7 +82,6 @@ function AddDataModal({ open, onClose, onAddData }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'percentage') {
-      // Validate percentage
       const numValue = value === '' ? '' : parseFloat(value);
       if (numValue === '' || (numValue >= 1 && numValue <= 100)) {
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -185,77 +184,46 @@ function AddDataModal({ open, onClose, onAddData }) {
         <Typography variant="h6" component="h2" gutterBottom sx={{ fontSize: '1.2rem' }}>
           Strategiya üzrə tədbirlər
         </Typography>
-        <TextField
+        <FormField
           label="Nömrə"
           name="title"
           value={formData.title}
           onChange={handleChange}
-          fullWidth
-          margin="normal"
-          size="small"
-          multiline
           rows={3}
-          variant="outlined"
-          InputLabelProps={{ style: { fontSize: '0.9rem' } }}
-          InputProps={{ style: { fontSize: '0.9rem' } }}
         />
-        <TextField
+        <FormField
           label="Strategiya üzrə tədbirlər"
           name="name"
           value={formData.name}
           onChange={handleChange}
-          fullWidth
-          margin="normal"
-          size="small"
           multiline
           rows={3}
-          variant="outlined"
-          InputLabelProps={{ style: { fontSize: '0.9rem' } }}
-          InputProps={{ style: { fontSize: '0.9rem' } }}
         />
-        <TextField
+        <FormField
           label="Faiz"
           name="percentage"
           value={formData.percentage}
           onChange={handleChange}
-          fullWidth
-          margin="normal"
           type="number"
-          size="small"
-          variant="outlined"
           error={!!percentageError}
           helperText={percentageError}
-          InputLabelProps={{ style: { fontSize: '0.9rem' } }}
-          InputProps={{ 
-            style: { fontSize: '0.9rem' },
-            inputProps: { min: 1, max: 100, step: 1 } // Browser-level restriction
-          }}
+          inputProps={{ min: 1, max: 100, step: 1 }}
         />
-        <TextField
+        <FormField
           label="Başlama Tarixi"
           name="startDate"
           value={formData.startDate}
           onChange={handleChange}
-          fullWidth
-          margin="normal"
-          type="datetime-local"
-          size="small"
-          variant="outlined"
-          InputLabelProps={{ style: { fontSize: '0.9rem' }, shrink: true }}
-          InputProps={{ style: { fontSize: '0.9rem' } }}
+          type="date" // Saat aradan qaldırılır
+          InputLabelProps={{ shrink: true }}
         />
-        <TextField
+        <FormField
           label="Bitmə Tarixi"
           name="endDate"
           value={formData.endDate}
           onChange={handleChange}
-          fullWidth
-          margin="normal"
-          type="datetime-local"
-          size="small"
-          variant="outlined"
-          InputLabelProps={{ style: { fontSize: '0.9rem' }, shrink: true }}
-          InputProps={{ style: { fontSize: '0.9rem' } }}
+          type="date" // Saat aradan qaldırılır
+          InputLabelProps={{ shrink: true }}
         />
         <FormControl fullWidth margin="normal">
           <InputLabel
@@ -305,18 +273,12 @@ function AddDataModal({ open, onClose, onAddData }) {
         </Typography>
         {formData.notes.map((note, index) => (
           <Box key={index} sx={{ mb: 1 }}>
-            <TextField
+            <FormField
               label="Məzmun"
               value={note.content}
               onChange={(e) => handleNoteChange(index, 'content', e.target.value)}
-              fullWidth
-              margin="normal"
-              size="small"
               multiline
               rows={3}
-              variant="outlined"
-              InputLabelProps={{ style: { fontSize: '0.9rem' } }}
-              InputProps={{ style: { fontSize: '0.9rem' } }}
             />
             <FormControl fullWidth margin="normal">
               <InputLabel

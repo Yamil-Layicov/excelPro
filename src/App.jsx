@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { staticData as initialData } from './data/staticData';
 import Login from './components/Login';
 import TablePage from './components/TablePage';
 import PrivateRoute from './components/PrivateRoute';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
-  const [data, setData] = useState(initialData);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
 
   useEffect(() => {
@@ -51,7 +49,6 @@ function App() {
           element={
             <PrivateRoute token={token}>
               <TablePage
-                data={data}
                 onAddData={handleAddData}
                 onDelete={handleDelete}
                 onUpdate={handleUpdate}
