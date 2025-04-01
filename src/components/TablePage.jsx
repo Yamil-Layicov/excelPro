@@ -7,7 +7,6 @@ function TablePage({ data, onAddData, onDelete, onUpdate }) {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1>Cədvəl</h1>
       <Table
         data={data}
         onOpenModal={() => setOpenModal(true)}

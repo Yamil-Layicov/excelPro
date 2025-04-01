@@ -10,24 +10,90 @@ import {
   MenuItem,
   Checkbox,
   ListItemText,
+  Fade,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import toast from 'react-hot-toast';
-import FormField from './FormField'; 
+import FormField from './FormField';
+import { styled } from '@mui/system';
 
-const style = {
+// Custom styled components
+const StyledModalBox = styled(Box)({
   position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: 400,
-  maxHeight: '80vh',
-  bgcolor: 'background.paper',
-  border: '1px solid #ccc',
-  boxShadow: 24,
-  p: 3,
+  width: 450,
+  maxHeight: '85vh',
+  backgroundColor: '#ffffff',
+  borderRadius: '12px',
+  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+  padding: '24px',
   overflowY: 'auto',
-};
+  border: '1px solid #e0e0e0',
+});
+
+const StyledButton = styled(Button)({
+  backgroundColor: '#1976d2',
+  color: '#fff',
+  padding: '8px 16px',
+  fontWeight: '500',
+  textTransform: 'none',
+  borderRadius: '8px',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    backgroundColor: '#115293',
+    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+  },
+});
+
+const AddNoteButton = styled(Button)({
+  borderColor: '#388e3c',
+  color: '#388e3c',
+  padding: '6px 12px',
+  fontSize: '0.85rem',
+  textTransform: 'none',
+  borderRadius: '6px',
+  '&:hover': {
+    borderColor: '#2e7d32',
+    color: '#2e7d32',
+    backgroundColor: '#e8f5e9',
+  },
+});
+
+const DeleteNoteButton = styled(Button)({
+  borderColor: '#d32f2f',
+  color: '#d32f2f',
+  padding: '4px 10px',
+  fontSize: '0.8rem',
+  textTransform: 'none',
+  borderRadius: '6px',
+  '&:hover': {
+    borderColor: '#b71c1c',
+    color: '#b71c1c',
+    backgroundColor: '#ffebee',
+  },
+});
+
+const StyledFormControl = styled(FormControl)({
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': {
+      borderColor: '#bdbdbd',
+    },
+    '&:hover fieldset': {
+      borderColor: '#757575',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: '#1976d2',
+    },
+  },
+  '& .MuiInputLabel-root': {
+    color: '#616161',
+    fontSize: '0.9rem',
+  },
+});
 
 function AddDataModal({ open, onClose, onAddData }) {
   const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
@@ -62,9 +128,7 @@ function AddDataModal({ open, onClose, onAddData }) {
         },
       })
         .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP xətası! Status: ${response.status}`);
-          }
+          if (!response.ok) throw new Error(`HTTP xətası! Status: ${response.status}`);
           return response.json();
         })
         .then((data) => {
@@ -127,7 +191,6 @@ function AddDataModal({ open, onClose, onAddData }) {
       toast.error('Autentifikasiya tokeni tapılmadı');
       return;
     }
-
     if (percentageError) {
       toast.error('Faiz sahəsində xəta var');
       return;
@@ -180,208 +243,174 @@ function AddDataModal({ open, onClose, onAddData }) {
 
   return (
     <Modal open={open} onClose={onClose}>
-      <Box sx={style}>
-        <Typography variant="h6" component="h2" gutterBottom sx={{ fontSize: '1.2rem' }}>
-          Strategiya üzrə tədbirlər
-        </Typography>
-        <FormField
-          label="Nömrə"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          rows={3}
-        />
-        <FormField
-          label="Strategiya üzrə tədbirlər"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          multiline
-          rows={3}
-        />
-        <FormField
-          label="Faiz"
-          name="percentage"
-          value={formData.percentage}
-          onChange={handleChange}
-          type="number"
-          error={!!percentageError}
-          helperText={percentageError}
-          inputProps={{ min: 1, max: 100, step: 1 }}
-        />
-        <FormField
-          label="Başlama Tarixi"
-          name="startDate"
-          value={formData.startDate}
-          onChange={handleChange}
-          type="date" // Saat aradan qaldırılır
-          InputLabelProps={{ shrink: true }}
-        />
-        <FormField
-          label="Bitmə Tarixi"
-          name="endDate"
-          value={formData.endDate}
-          onChange={handleChange}
-          type="date" // Saat aradan qaldırılır
-          InputLabelProps={{ shrink: true }}
-        />
-        <FormControl fullWidth margin="normal">
-          <InputLabel
-            id="executors-select-label"
-            sx={{ fontSize: '0.9rem', top: '-6px' }}
+      <Fade in={open}>
+        <StyledModalBox>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ fontWeight: '600', color: '#1976d2', mb: 3 }}
           >
-            İcraçılar
-          </InputLabel>
-          <Select
-            labelId="executors-select-label"
-            multiple
-            name="executorIds"
-            value={formData.executorIds}
-            onChange={handleExecutorChange}
-            label="İcraçılar"
-            disabled={!!error}
-            size="small"
-            sx={{ fontSize: '0.9rem' }}
-            renderValue={(selected) =>
-              selected
-                .map((id) => executors.find((e) => e.id === id)?.name || id)
-                .join(', ')
-            }
-          >
-            {executors.map((executor) => (
-              <MenuItem key={executor.id} value={executor.id}>
-                <Checkbox
-                  checked={formData.executorIds.indexOf(executor.id) > -1}
-                  icon={<Box sx={{ width: 20, height: 20, border: '1px solid grey' }} />}
-                  checkedIcon={<CheckIcon sx={{ fontSize: 20 }} />}
-                />
-                <ListItemText
-                  primary={executor.name}
-                  primaryTypographyProps={{ fontSize: '0.9rem' }}
-                />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        {error && (
-          <Typography color="error" variant="body2" sx={{ mt: 1, fontSize: '0.8rem' }}>
-            {error}
+            Strategiya üzrə tədbirlər
           </Typography>
-        )}
-        <Typography variant="subtitle1" sx={{ mt: 2, fontSize: '1rem' }}>
-          Qeydlər
-        </Typography>
-        {formData.notes.map((note, index) => (
-          <Box key={index} sx={{ mb: 1 }}>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <FormField
-              label="Məzmun"
-              value={note.content}
-              onChange={(e) => handleNoteChange(index, 'content', e.target.value)}
+              label="Nömrə"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              rows={3}
+            />
+            <FormField
+              label="Strategiya üzrə tədbirlər"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               multiline
               rows={3}
             />
-            <FormControl fullWidth margin="normal">
-              <InputLabel
-                id={`month-select-label-${index}`}
-                sx={{ fontSize: '0.9rem', top: '-6px' }}
-              >
-                Ay
-              </InputLabel>
+            <FormField
+              label="Faiz"
+              name="percentage"
+              value={formData.percentage}
+              onChange={handleChange}
+              type="number"
+              error={!!percentageError}
+              helperText={percentageError}
+              inputProps={{ min: 1, max: 100, step: 1 }}
+            />
+            <FormField
+              label="Başlama Tarixi"
+              name="startDate"
+              value={formData.startDate}
+              onChange={handleChange}
+              type="date"
+              InputLabelProps={{ shrink: true }}
+            />
+            <FormField
+              label="Bitmə Tarixi"
+              name="endDate"
+              value={formData.endDate}
+              onChange={handleChange}
+              type="date"
+              InputLabelProps={{ shrink: true }}
+            />
+            <StyledFormControl fullWidth>
+              <InputLabel id="executors-select-label">İcraçılar</InputLabel>
               <Select
-                labelId={`month-select-label-${index}`}
-                value={note.month}
-                onChange={(e) => handleNoteChange(index, 'month', e.target.value)}
-                label="Ay"
-                size="small"
-                sx={{ fontSize: '0.9rem' }}
+                labelId="executors-select-label"
+                multiple
+                name="executorIds"
+                value={formData.executorIds}
+                onChange={handleExecutorChange}
+                label="İcraçılar"
+                disabled={!!error}
+                renderValue={(selected) =>
+                  selected
+                    .map((id) => executors.find((e) => e.id === id)?.name || id)
+                    .join(', ')
+                }
               >
-                {months.map((month, i) => (
-                  <MenuItem key={month} value={i + 1}>
-                    {month}
+                {executors.map((executor) => (
+                  <MenuItem key={executor.id} value={executor.id}>
+                    <Checkbox
+                      checked={formData.executorIds.indexOf(executor.id) > -1}
+                      icon={<Box sx={{ width: 20, height: 20, border: '1px solid grey' }} />}
+                      checkedIcon={<CheckIcon sx={{ fontSize: 20, color: '#1976d2' }} />}
+                    />
+                    <ListItemText primary={executor.name} />
                   </MenuItem>
                 ))}
               </Select>
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <InputLabel
-                id={`year-select-label-${index}`}
-                sx={{ fontSize: '0.9rem', top: '-6px' }}
-              >
-                İl
-              </InputLabel>
-              <Select
-                labelId={`year-select-label-${index}`}
-                value={note.year}
-                onChange={(e) => handleNoteChange(index, 'year', e.target.value)}
-                label="İl"
-                size="small"
-                sx={{ fontSize: '0.9rem' }}
-              >
-                {years.map((year) => (
-                  <MenuItem key={year} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {formData.notes.length > 1 && (
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => removeNote(index)}
-                size="small"
-                sx={{ mt: 1, fontSize: '0.8rem' }}
-              >
-                Sil
-              </Button>
+            </StyledFormControl>
+            {error && (
+              <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                {error}
+              </Typography>
             )}
+
+            <Typography variant="subtitle1" sx={{ mt: 2, fontWeight: '500', color: '#424242' }}>
+              Qeydlər
+            </Typography>
+            {formData.notes.map((note, index) => (
+              <Box
+                key={index}
+                sx={{
+                  border: '1px solid #e0e0e0',
+                  borderRadius: '8px',
+                  p: 2,
+                  mb: 2,
+                  backgroundColor: '#fafafa',
+                }}
+              >
+                <FormField
+                  label="Məzmun"
+                  value={note.content}
+                  onChange={(e) => handleNoteChange(index, 'content', e.target.value)}
+                  multiline
+                  rows={3}
+                />
+                <StyledFormControl fullWidth sx={{ mt: 2 }}>
+                  <InputLabel id={`month-select-label-${index}`}>Ay</InputLabel>
+                  <Select
+                    labelId={`month-select-label-${index}`}
+                    value={note.month}
+                    onChange={(e) => handleNoteChange(index, 'month', e.target.value)}
+                    label="Ay"
+                  >
+                    {months.map((month, i) => (
+                      <MenuItem key={month} value={i + 1}>
+                        {month}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </StyledFormControl>
+                <StyledFormControl fullWidth sx={{ mt: 2 }}>
+                  <InputLabel id={`year-select-label-${index}`}>İl</InputLabel>
+                  <Select
+                    labelId={`year-select-label-${index}`}
+                    value={note.year}
+                    onChange={(e) => handleNoteChange(index, 'year', e.target.value)}
+                    label="İl"
+                  >
+                    {years.map((year) => (
+                      <MenuItem key={year} value={year}>
+                        {year}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </StyledFormControl>
+                {formData.notes.length > 1 && (
+                  <DeleteNoteButton
+                    variant="outlined"
+                    onClick={() => removeNote(index)}
+                    startIcon={<DeleteIcon />}
+                    sx={{ mt: 2 }}
+                  >
+                    Sil
+                  </DeleteNoteButton>
+                )}
+              </Box>
+            ))}
+            <AddNoteButton
+              variant="outlined"
+              onClick={addNote}
+              startIcon={<AddIcon />}
+            >
+              Yeni Qeyd Əlavə Et
+            </AddNoteButton>
+
+            <StyledButton
+              variant="contained"
+              onClick={handleSubmit}
+              fullWidth
+              sx={{ mt: 3 }}
+            >
+              Əlavə Et
+            </StyledButton>
           </Box>
-        ))}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-start',
-            mt: 2,
-            mb: 4,
-          }}
-        >
-          <Button
-            variant="outlined"
-            onClick={addNote}
-            size="small"
-            sx={{
-              fontSize: '0.8rem',
-              borderColor: '#1976d2',
-              color: '#1976d2',
-              '&:hover': {
-                borderColor: '#115293',
-                color: '#115293',
-                bgcolor: '#e3f2fd',
-              },
-            }}
-          >
-            Yeni Qeyd Əlavə Et
-          </Button>
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        >
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            sx={{
-              fontSize: '0.9rem',
-              bgcolor: '#1976d2',
-              '&:hover': { bgcolor: '#115293' },
-            }}
-          >
-            Əlavə Et
-          </Button>
-        </Box>
-      </Box>
+        </StyledModalBox>
+      </Fade>
     </Modal>
   );
 }
