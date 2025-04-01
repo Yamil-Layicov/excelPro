@@ -61,7 +61,7 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
         executors: [...updateData.executors, selectedExecutor],
       });
     }
-  };
+  };  
 
   const handleRemoveExecutor = (executorId) => {
     setUpdateData({
@@ -96,7 +96,7 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
       toast.error('Autentifikasiya tokeni tapılmadı');
       return;
     }
-  
+
     const payload = {
       id: updateData.id,
       title: updateData.title,
@@ -104,10 +104,7 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
       percentage: updateData.percentage.toString(),
       startDate: new Date(updateData.startDate).toISOString(),
       endDate: new Date(updateData.endDate).toISOString(),
-      executors: updateData.executors.map((exec) => ({
-        id: exec.id,
-        name: exec.name,
-      })),
+      executorIds: updateData.executors.map((exec) => exec.id), // Yalnız id-ləri göndəririk
       notes: updateData.notes.map((note) => ({
         id: note.id,
         content: note.content,
@@ -115,7 +112,7 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
         year: parseInt(note.year) || 0,
       })),
     };
-  
+
     try {
       const response = await fetch(`http://192.168.100.123:5051/api/StrategyEvents/Update/${updateData.id}`, {
         method: 'PUT',
@@ -125,10 +122,10 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
         },
         body: JSON.stringify(payload),
       });
-  
+
       if (response.ok) {
         const updatedData = await response.json();
-        onSave(updatedData); // Yenilənmiş məlumatı Table komponentinə ötürürük
+        onSave(updatedData);
         toast.success('Məlumat uğurla yeniləndi');
         onClose();
       } else {

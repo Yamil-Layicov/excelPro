@@ -19,6 +19,7 @@ import UpdateDataModal from "./UpdateDataModal";
 import DeleteDialog from "./DeleteDialog";
 import AddDataModal from "./AddDataModal";
 import AddNoteModal from "./AddNoteModal";
+import toast from "react-hot-toast";
 
 function Table() {
   const months = [
@@ -43,8 +44,10 @@ function Table() {
   const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
 
   const [tableData, setTableData] = useState([]);
-  const [selectedMonths, setSelectedMonths] = useState([currentMonth]);
+  const [selectedMonths, setSelectedMonths] = useState(months);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedExecutors, setSelectedExecutors] = useState([]);
+  const [availableExecutors, setAvailableExecutors] = useState([]); // İcraçıların siyahısı üçün state
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
   const [openAddModal, setOpenAddModal] = useState(false);
@@ -55,66 +58,120 @@ function Table() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // İcraçıları çəkmək üçün useEffect
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchExecutors = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
         const token = localStorage.getItem("token");
-
         if (!token) {
-          throw new Error("No authentication token found");
+          console.error("Autentifikasiya tokeni tapılmadı");
+          return;
         }
 
-        const monthParams = selectedMonths
-          .map((month) => {
-            const monthIndex = months.indexOf(month) + 1;
-            return monthIndex > 0 ? `Months=${monthIndex}` : null;
-          })
-          .filter((param) => param !== null)
-          .join("&");
-        const url = `http://192.168.100.123:5051/api/StrategyEvents/GetAll?${monthParams}&Year=${selectedYear}`;
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
+        const response = await fetch(
+          "http://192.168.100.123:5051/api/Executors/GetAll",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error("Unauthorized: Invalid or expired token");
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`HTTP xətası! Status: ${response.status}`);
         }
 
-        const result = await response.json();
-        if (!Array.isArray(result.data)) {
-          console.error("API-dan gələn məlumat array deyil:", result.data);
-          setTableData([]);
-        } else {
-          setTableData(result.data);
-        }
+        const data = await response.json();
+        setAvailableExecutors(data.data || []);
       } catch (error) {
-        console.error("Error fetching data:", error);
-        setError(error.message);
-        setTableData([]);
-      } finally {
-        setLoading(false);
+        console.error("Icraçıları çəkməkdə xəta:", error);
+        setAvailableExecutors([]);
       }
     };
 
+    fetchExecutors();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Əgər selectedMonths boş deyilsə, monthParams yaradılır
+      const monthParams =
+        selectedMonths.length > 0
+          ? selectedMonths
+              .map((month) => {
+                const monthIndex = months.indexOf(month) + 1;
+                return monthIndex > 0 ? `Months=${monthIndex}` : null;
+              })
+              .filter((param) => param !== null)
+              .join("&")
+          : "";
+
+      // Əgər selectedExecutors varsa, ExecutorIds parametrləri əlavə olunur
+      const executorParams =
+        selectedExecutors.length > 0
+          ? selectedExecutors.map((id) => `ExecutorIds=${id}`).join("&")
+          : "";
+
+      // URL-i dinamik olaraq yaradırıq
+      const queryParams = [executorParams, `Year=${selectedYear}`, monthParams]
+        .filter((param) => param)
+        .join("&");
+
+      const url = `http://192.168.100.123:5051/api/StrategyEvents/GetAll${
+        queryParams ? `?${queryParams}` : ""
+      }`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Unauthorized: Invalid or expired token");
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (!Array.isArray(result.data)) {
+        console.error("API-dan gələn məlumat array deyil:", result.data);
+        setTableData([]);
+      } else {
+        setTableData(result.data);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError(error.message);
+      setTableData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
-  }, [selectedMonths, selectedYear]);
+  }, [selectedMonths, selectedYear, selectedExecutors]); // selectedExecutor əlavə edildi
 
   const handleMonthChange = (event) => {
     const value = event.target.value;
     const newSelection = typeof value === "string" ? value.split(",") : value;
     setSelectedMonths(
       newSelection.length === 0
-        ? [currentMonth]
+        ? []
         : newSelection.filter((month) => months.includes(month))
     );
   };
@@ -123,12 +180,25 @@ function Table() {
     if (event.target.checked) {
       setSelectedMonths([...months]);
     } else {
-      setSelectedMonths([currentMonth]);
+      setSelectedMonths([]);
     }
   };
 
   const handleYearChange = (event) => {
     setSelectedYear(event.target.value);
+  };
+
+  const handleExecutorChange = (event) => {
+    const value = event.target.value;
+    setSelectedExecutors(typeof value === "string" ? value.split(",") : value);
+  };
+
+  const handleSelectAllExecutors = (event) => {
+    if (event.target.checked) {
+      setSelectedExecutors(availableExecutors.map((executor) => executor.id));
+    } else {
+      setSelectedExecutors([]);
+    }
   };
 
   const handleDeleteClick = (id) => {
@@ -213,15 +283,21 @@ function Table() {
       toast.error("Məlumat yenilənərkən xəta baş verdi");
       return;
     }
-  
+
     setTableData((prev) =>
       prev.map((row) => (row.id === updatedData.id ? updatedData : row))
     );
     handleCloseUpdateDialog();
   };
 
-  const handleAddData = (newData) => {
-    setTableData((prev) => [...prev, newData.data]);
+  const handleAddData = async (newData) => {
+    if (!newData || !newData.id) {
+      console.error("Yeni məlumat düzgün formatda deyil:", newData);
+      toast.error("Tədbir əlavə edilərkən xəta baş verdi");
+      return;
+    }
+
+    await fetchData();
   };
 
   const handleOpenAddModal = () => {
@@ -245,6 +321,7 @@ function Table() {
   const handleAddNote = (newNote) => {
     if (!newNote || !newNote.strategyEventId) {
       console.error("Yeni qeyd düzgün formatda deyil:", newNote);
+      toast.error("Qeyd əlavə edilərkən xəta baş verdi");
       return;
     }
 
@@ -255,6 +332,12 @@ function Table() {
           : row
       )
     );
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    toast.success("Sistemdən uğurla çıxış etdiniz!");
+    window.location.reload();
   };
 
   const isAllSelected = selectedMonths.length === months.length;
@@ -320,11 +403,54 @@ function Table() {
               ))}
             </Select>
           </FormControl>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel id="executor-select-label">İcraçılar</InputLabel>
+            <Select
+              labelId="executor-select-label"
+              multiple
+              value={selectedExecutors}
+              onChange={handleExecutorChange}
+              renderValue={(selected) =>
+                selected
+                  .map(
+                    (id) =>
+                      availableExecutors.find((exec) => exec.id === id)?.name
+                  )
+                  .filter(Boolean)
+                  .join(", ")
+              }
+              label="İcraçılar"
+            >
+              <MenuItem onClick={(e) => e.stopPropagation()}>
+                <Checkbox
+                  checked={
+                    selectedExecutors.length === availableExecutors.length
+                  }
+                  onChange={handleSelectAllExecutors}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <ListItemText primary="Hamısını seç" />
+              </MenuItem>
+              {availableExecutors.map((executor) => (
+                <MenuItem key={executor.id} value={executor.id}>
+                  <Checkbox
+                    checked={selectedExecutors.indexOf(executor.id) > -1}
+                  />
+                  <ListItemText primary={executor.name} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </div>
 
-        <Button variant="contained" onClick={handleOpenAddModal}>
-          Əlavə Et
-        </Button>
+        <div style={{ display: "flex", gap: "20px" }}>
+          <Button variant="contained" onClick={handleOpenAddModal}>
+            Əlavə Et
+          </Button>
+          <Button variant="contained" color="error" onClick={handleLogout}>
+            Çıxış
+          </Button>
+        </div>
       </div>
 
       <TableContainer
@@ -407,7 +533,7 @@ function Table() {
           </TableHead>
           <TableBody>
             {tableData
-              .filter((row) => row && typeof row === 'object' && row.id)
+              .filter((row) => row && typeof row === "object" && row.id)
               .map((row) => (
                 <TableRow key={row.id}>
                   <TableCell sx={{ borderRight: "1px solid #e0e0e0" }}>
@@ -417,13 +543,18 @@ function Table() {
                     {row.name}
                   </TableCell>
                   <TableCell sx={{ borderRight: "1px solid #e0e0e0" }}>
-                    {row.executors?.map((exec) => exec.name).join(", ") || "Yoxdur"}
+                    {row.executors?.map((exec) => exec.name).join(", ") ||
+                      "Yoxdur"}
                   </TableCell>
                   <TableCell sx={{ borderRight: "1px solid #e0e0e0" }}>
-                    {row.startDate ? new Date(row.startDate).toLocaleDateString() : "Yoxdur"}
+                    {row.startDate
+                      ? new Date(row.startDate).toLocaleDateString()
+                      : "Yoxdur"}
                   </TableCell>
                   <TableCell sx={{ borderRight: "1px solid #e0e0e0" }}>
-                    {row.endDate ? new Date(row.endDate).toLocaleDateString() : "Yoxdur"}
+                    {row.endDate
+                      ? new Date(row.endDate).toLocaleDateString()
+                      : "Yoxdur"}
                   </TableCell>
                   <TableCell sx={{ borderRight: "1px solid #e0e0e0" }}>
                     {isNaN(parseFloat(row.percentage))
@@ -432,9 +563,8 @@ function Table() {
                   </TableCell>
                   {selectedMonths.map((month) => {
                     const monthIndex = months.indexOf(month) + 1;
-                    const matchingNotes = row.notes?.filter(
-                      (n) => n?.month === monthIndex
-                    ) || [];
+                    const matchingNotes =
+                      row.notes?.filter((n) => n?.month === monthIndex) || [];
                     const displayContent =
                       matchingNotes.length > 0
                         ? matchingNotes.map((note) => note.content).join("; ")
@@ -462,12 +592,12 @@ function Table() {
                         size="small"
                         onClick={() => handleDeleteClick(row.id)}
                         sx={{
-                          fontSize: '0.75rem',
-                          width: '60px',
-                          height: '28px',
-                          minWidth: 'unset',
-                          padding: '4px 8px',
-                          textTransform: 'capitalize',
+                          fontSize: "0.75rem",
+                          width: "60px",
+                          height: "28px",
+                          minWidth: "unset",
+                          padding: "4px 8px",
+                          textTransform: "capitalize",
                         }}
                       >
                         Sil
@@ -478,15 +608,15 @@ function Table() {
                         size="small"
                         onClick={() => handleUpdateClick(row.id)}
                         sx={{
-                          fontSize: '0.75rem',
-                          width: '60px',
-                          height: '28px',
-                          minWidth: 'unset',
-                          padding: '4px 8px',
-                          textTransform: 'capitalize',
+                          fontSize: "0.75rem",
+                          width: "60px",
+                          height: "28px",
+                          minWidth: "unset",
+                          padding: "4px 8px",
+                          textTransform: "capitalize",
                         }}
                       >
-                        Yenilə
+                        Redaktə
                       </Button>
                       <Button
                         variant="outlined"
@@ -494,15 +624,15 @@ function Table() {
                         size="small"
                         onClick={() => handleOpenAddNoteModal(row.id)}
                         sx={{
-                          fontSize: '0.75rem',
-                          width: '90px',
-                          height: '28px',
-                          minWidth: 'unset',
-                          padding: '4px 8px',
-                          textTransform: 'capitalize',
+                          fontSize: "0.75rem",
+                          width: "90px",
+                          height: "28px",
+                          minWidth: "unset",
+                          padding: "4px 8px",
+                          textTransform: "capitalize",
                         }}
                       >
-                      Yeni Qeyd
+                        Yeni Qeyd
                       </Button>
                     </div>
                   </TableCell>
