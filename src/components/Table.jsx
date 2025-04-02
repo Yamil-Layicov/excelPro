@@ -28,7 +28,7 @@ import { styled } from '@mui/system';
 const UserInfoBox = styled(Box)({
   position: 'absolute',
   top: 10,
-  left: 20, 
+  right: 20, 
   padding: '8px 16px',
   backgroundColor: '#1976d2',
   color: '#fff',
