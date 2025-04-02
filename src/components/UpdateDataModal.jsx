@@ -228,7 +228,7 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
                     value={updateData.name}
                     onChange={(e) => setUpdateData({ ...updateData, name: e.target.value })}
                     multiline
-                    rows={3}
+                    rows={4}
                     sx={{ mt: 2 }}
                   />
                 </>
@@ -315,7 +315,7 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
                     value={note.content}
                     onChange={(e) => handleNoteChange(index, 'content', e.target.value)}
                     multiline
-                    rows={3}
+                    rows={4}
                   />
                   <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                     <FormControl fullWidth>
