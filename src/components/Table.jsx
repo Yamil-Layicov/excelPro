@@ -24,7 +24,7 @@ import AddNoteModal from "./AddNoteModal";
 import toast from "react-hot-toast";
 import { fontSize, styled } from "@mui/system";
 import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
-import RemoveIcon from '@mui/icons-material/Remove';
+import RemoveIcon from "@mui/icons-material/Remove";
 
 // Styled component for user info
 const UserInfoBox = styled(Box)({
@@ -695,16 +695,40 @@ function TableComponent() {
                               matchingNotes.length > 0 ? "8px" : "0",
                           }}
                         >
-                          {matchingNotes.length > 0
-                            ? matchingNotes.map((note, index) => (
-                              <div key={index} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>
-                                <RemoveIcon sx={{ fontSize: "medium" }} />
-                              </span>
-                              {note.content}
-                            </div>
-                              ))
-                            : "Məlumat yoxdur"}
+                          {matchingNotes.length > 0 ? (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "18px",
+                              }}
+                            >
+                              {matchingNotes.map((note, index) => (
+                                <div
+                                  key={index}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    <RemoveIcon sx={{ fontSize: "medium" }} />
+                                  </span>
+                                  {note.content}
+                                </div>
+                              ))}
+                            </Box>
+                          ) : (
+                            "Məlumat yoxdur"
+                          )}
                         </Box>
                       </TableCell>
                     );
