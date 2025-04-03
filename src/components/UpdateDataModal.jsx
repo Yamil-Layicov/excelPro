@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 
 const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) => {
   const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
-  const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
+  const years = Array.from({ length: 6 }, (_, i) => 2025 + i);
 
   const [availableExecutors, setAvailableExecutors] = useState([]);
   const [userRole, setUserRole] = useState(null);
@@ -312,7 +312,7 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
                     value={note.content}
                     onChange={(e) => handleNoteChange(index, 'content', e.target.value)}
                     multiline
-                    rows={4}
+                    rows={5}
                   />
                   <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                     <FormControl fullWidth>

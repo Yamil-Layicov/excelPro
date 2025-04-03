@@ -26,7 +26,7 @@ const style = {
 
 function AddNoteModal({ open, onClose, eventId, onAddNote }) {
   const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
-  const years = Array.from({ length: 11 }, (_, i) => 2020 + i);
+  const years = Array.from({ length: 6 }, (_, i) => 2025 + i);
 
   const [noteData, setNoteData] = useState({
     content: '',

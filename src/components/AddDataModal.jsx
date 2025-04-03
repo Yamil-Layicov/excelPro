@@ -97,7 +97,7 @@ const StyledFormControl = styled(FormControl)(({ error }) => ({
 
 function AddDataModal({ open, onClose, onAddData }) {
   const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
-  const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
+  const years = Array.from({ length: 6 }, (_, i) => 2025 + i);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -410,7 +410,7 @@ function AddDataModal({ open, onClose, onAddData }) {
                   value={note.content}
                   onChange={(e) => handleNoteChange(index, 'content', e.target.value)}
                   multiline
-                  rows={3}
+                  rows={5}
                   error={!!validationErrors.notes?.[index]?.content}
                   helperText={validationErrors.notes?.[index]?.content}
                 />
