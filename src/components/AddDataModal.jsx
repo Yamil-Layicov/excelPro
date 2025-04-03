@@ -77,27 +77,27 @@ const DeleteNoteButton = styled(Button)({
   },
 });
 
-const StyledFormControl = styled(FormControl)({
+const StyledFormControl = styled(FormControl)(({ error }) => ({
   '& .MuiOutlinedInput-root': {
     '& fieldset': {
-      borderColor: '#bdbdbd',
+      borderColor: error ? '#d32f2f' : '#bdbdbd',
     },
     '&:hover fieldset': {
-      borderColor: '#757575',
+      borderColor: error ? '#d32f2f' : '#757575',
     },
     '&.Mui-focused fieldset': {
-      borderColor: '#1976d2',
+      borderColor: error ? '#d32f2f' : '#1976d2',
     },
   },
   '& .MuiInputLabel-root': {
-    color: '#616161',
+    color: error ? '#d32f2f' : '#616161',
     fontSize: '0.9rem',
   },
-});
+}));
 
 function AddDataModal({ open, onClose, onAddData }) {
   const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
-  const years = Array.from({ length: 11 }, (_, i) => 2020 + i); // 2020 to 2030
+  const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -111,6 +111,7 @@ function AddDataModal({ open, onClose, onAddData }) {
   const [executors, setExecutors] = useState([]);
   const [error, setError] = useState(null);
   const [percentageError, setPercentageError] = useState('');
+  const [validationErrors, setValidationErrors] = useState({}); // Yeni state validation üçün
 
   useEffect(() => {
     if (open) {
@@ -150,17 +151,20 @@ function AddDataModal({ open, onClose, onAddData }) {
       if (numValue === '' || (numValue >= 1 && numValue <= 100)) {
         setFormData((prev) => ({ ...prev, [name]: value }));
         setPercentageError('');
+        setValidationErrors((prev) => ({ ...prev, percentage: '' }));
       } else {
         setPercentageError('Faiz 1 ilə 100 arasında olmalıdır');
       }
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
+      setValidationErrors((prev) => ({ ...prev, [name]: value ? '' : 'Boş qala bilməz' }));
     }
   };
 
   const handleExecutorChange = (event) => {
     const value = event.target.value;
     setFormData((prev) => ({ ...prev, executorIds: value }));
+    setValidationErrors((prev) => ({ ...prev, executorIds: value.length ? '' : 'Boş qala bilməz' }));
   };
 
   const handleNoteChange = (index, field, value) => {
@@ -169,12 +173,22 @@ function AddDataModal({ open, onClose, onAddData }) {
       newNotes[index] = { ...newNotes[index], [field]: value };
       return { ...prev, notes: newNotes };
     });
+    setValidationErrors((prev) => ({
+      ...prev,
+      notes: prev.notes.map((note, i) =>
+        i === index ? { ...note, [field]: value ? '' : 'Boş qala bilməz' } : note
+      ),
+    }));
   };
 
   const addNote = () => {
     setFormData((prev) => ({
       ...prev,
       notes: [...prev.notes, { content: '', month: '', year: '' }],
+    }));
+    setValidationErrors((prev) => ({
+      ...prev,
+      notes: [...prev.notes, { content: 'Boş qala bilməz', month: 'Boş qala bilməz', year: 'Boş qala bilməz' }],
     }));
   };
 
@@ -183,6 +197,32 @@ function AddDataModal({ open, onClose, onAddData }) {
       ...prev,
       notes: prev.notes.filter((_, i) => i !== index),
     }));
+    setValidationErrors((prev) => ({
+      ...prev,
+      notes: prev.notes.filter((_, i) => i !== index),
+    }));
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.title) errors.title = 'Boş qala bilməz';
+    if (!formData.name) errors.name = 'Boş qala bilməz';
+    if (!formData.percentage) errors.percentage = 'Boş qala bilməz';
+    if (!formData.startDate) errors.startDate = 'Boş qala bilməz';
+    if (!formData.endDate) errors.endDate = 'Boş qala bilməz';
+    if (!formData.executorIds.length) errors.executorIds = 'Boş qala bilməz';
+
+    const noteErrors = formData.notes.map((note) => ({
+      content: note.content ? '' : 'Boş qala bilməz',
+      month: note.month ? '' : 'Boş qala bilməz',
+      year: note.year ? '' : 'Boş qala bilməz',
+    }));
+    errors.notes = noteErrors;
+
+    setValidationErrors(errors);
+    return Object.keys(errors).every((key) =>
+      key === 'notes' ? noteErrors.every((note) => !note.content && !note.month && !note.year) : !errors[key]
+    );
   };
 
   const handleSubmit = async () => {
@@ -191,6 +231,12 @@ function AddDataModal({ open, onClose, onAddData }) {
       toast.error('Autentifikasiya tokeni tapılmadı');
       return;
     }
+
+    if (!validateForm()) {
+      toast.error('Bütün sahələri doldurun');
+      return;
+    }
+
     if (percentageError) {
       toast.error('Faiz sahəsində xəta var');
       return;
@@ -230,6 +276,7 @@ function AddDataModal({ open, onClose, onAddData }) {
           notes: [{ content: '', month: '', year: '' }],
         });
         setPercentageError('');
+        setValidationErrors({});
         onClose();
       } else {
         const errorData = await response.json();
@@ -259,7 +306,8 @@ function AddDataModal({ open, onClose, onAddData }) {
               name="title"
               value={formData.title}
               onChange={handleChange}
-              rows={3}
+              error={!!validationErrors.title}
+              helperText={validationErrors.title}
             />
             <FormField
               label="Strategiya üzrə tədbirlər"
@@ -268,6 +316,8 @@ function AddDataModal({ open, onClose, onAddData }) {
               onChange={handleChange}
               multiline
               rows={3}
+              error={!!validationErrors.name}
+              helperText={validationErrors.name}
             />
             <FormField
               label="Faiz"
@@ -275,8 +325,8 @@ function AddDataModal({ open, onClose, onAddData }) {
               value={formData.percentage}
               onChange={handleChange}
               type="number"
-              error={!!percentageError}
-              helperText={percentageError}
+              error={!!percentageError || !!validationErrors.percentage}
+              helperText={percentageError || validationErrors.percentage}
               inputProps={{ min: 1, max: 100, step: 1 }}
             />
             <FormField
@@ -286,6 +336,8 @@ function AddDataModal({ open, onClose, onAddData }) {
               onChange={handleChange}
               type="date"
               InputLabelProps={{ shrink: true }}
+              error={!!validationErrors.startDate}
+              helperText={validationErrors.startDate}
             />
             <FormField
               label="Bitmə Tarixi"
@@ -294,8 +346,10 @@ function AddDataModal({ open, onClose, onAddData }) {
               onChange={handleChange}
               type="date"
               InputLabelProps={{ shrink: true }}
+              error={!!validationErrors.endDate}
+              helperText={validationErrors.endDate}
             />
-            <StyledFormControl fullWidth>
+            <StyledFormControl fullWidth error={!!validationErrors.executorIds}>
               <InputLabel id="executors-select-label">İcraçılar</InputLabel>
               <Select
                 labelId="executors-select-label"
@@ -322,6 +376,11 @@ function AddDataModal({ open, onClose, onAddData }) {
                   </MenuItem>
                 ))}
               </Select>
+              {validationErrors.executorIds && (
+                <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                  {validationErrors.executorIds}
+                </Typography>
+              )}
             </StyledFormControl>
             {error && (
               <Typography color="error" variant="body2" sx={{ mt: 1 }}>
@@ -349,8 +408,14 @@ function AddDataModal({ open, onClose, onAddData }) {
                   onChange={(e) => handleNoteChange(index, 'content', e.target.value)}
                   multiline
                   rows={3}
+                  error={!!validationErrors.notes?.[index]?.content}
+                  helperText={validationErrors.notes?.[index]?.content}
                 />
-                <StyledFormControl fullWidth sx={{ mt: 2 }}>
+                <StyledFormControl
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  error={!!validationErrors.notes?.[index]?.month}
+                >
                   <InputLabel id={`month-select-label-${index}`}>Ay</InputLabel>
                   <Select
                     labelId={`month-select-label-${index}`}
@@ -364,8 +429,17 @@ function AddDataModal({ open, onClose, onAddData }) {
                       </MenuItem>
                     ))}
                   </Select>
+                  {validationErrors.notes?.[index]?.month && (
+                    <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                      {validationErrors.notes[index].month}
+                    </Typography>
+                  )}
                 </StyledFormControl>
-                <StyledFormControl fullWidth sx={{ mt: 2 }}>
+                <StyledFormControl
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  error={!!validationErrors.notes?.[index]?.year}
+                >
                   <InputLabel id={`year-select-label-${index}`}>İl</InputLabel>
                   <Select
                     labelId={`year-select-label-${index}`}
@@ -379,6 +453,11 @@ function AddDataModal({ open, onClose, onAddData }) {
                       </MenuItem>
                     ))}
                   </Select>
+                  {validationErrors.notes?.[index]?.year && (
+                    <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+                      {validationErrors.notes[index].year}
+                    </Typography>
+                  )}
                 </StyledFormControl>
                 {formData.notes.length > 1 && (
                   <DeleteNoteButton

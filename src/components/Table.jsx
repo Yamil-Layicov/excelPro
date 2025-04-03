@@ -621,7 +621,7 @@ function TableComponent() {
               <TableCell sx={{ minWidth: 100 }}>İcra Faizi</TableCell>
               {selectedMonths.map((month) => (
                 <TableCell key={month} sx={{ minWidth: 200 }}>
-                  {month} Qeyd
+                  {month} 
                 </TableCell>
               ))}
               <TableCell sx={{ minWidth: 200 }}>Əməliyyatlar</TableCell>

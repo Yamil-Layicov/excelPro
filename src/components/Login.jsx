@@ -6,7 +6,11 @@ import {
   Typography,
   Box,
   Fade,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import toast from 'react-hot-toast';
 import { styled } from '@mui/system';
 
@@ -17,41 +21,41 @@ const StyledBox = styled(Box)({
   alignItems: 'center',
   justifyContent: 'center',
   height: '100vh',
-  backgroundColor: '#f5f6f5', // Light gray background
+  backgroundColor: '#f5f6f5',
   padding: '1rem',
 });
 
 const FormContainer = styled(Box)({
   padding: '2rem',
   width: '360px',
-  backgroundColor: '#ffffff', // White card
+  backgroundColor: '#ffffff',
   borderRadius: '8px',
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', // Subtle shadow
-  border: '1px solid #e0e0e0', // Light border
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+  border: '1px solid #e0e0e0',
 });
 
 const FormalTextField = styled(TextField)({
   '& .MuiOutlinedInput-root': {
     '& fieldset': {
-      borderColor: '#d0d0d0', // Light gray border
+      borderColor: '#d0d0d0',
     },
     '&:hover fieldset': {
-      borderColor: '#757575', // Darker gray on hover
+      borderColor: '#757575',
     },
     '&.Mui-focused fieldset': {
-      borderColor: '#1976d2', // Professional blue on focus
+      borderColor: '#1976d2',
     },
   },
   '& .MuiInputLabel-root': {
-    color: '#616161', // Medium gray for labels
+    color: '#616161',
   },
   '& .MuiInputBase-input': {
-    color: '#212121', // Dark text
+    color: '#212121',
   },
 });
 
 const FormalButton = styled(Button)({
-  backgroundColor: '#1976d2', // Professional blue
+  backgroundColor: '#1976d2',
   color: '#ffffff',
   padding: '10px 0',
   fontWeight: '500',
@@ -60,13 +64,14 @@ const FormalButton = styled(Button)({
   borderRadius: '6px',
   transition: 'background-color 0.3s ease',
   '&:hover': {
-    backgroundColor: '#1565c0', // Slightly darker blue on hover
+    backgroundColor: '#1565c0',
   },
 });
 
 function Login({ setToken }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Parolu göstərmək/gizlətmək üçün state
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -93,6 +98,18 @@ function Login({ setToken }) {
     }
   };
 
+  // Enter düyməsinə basanda giriş etmək
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  };
+
+  // Parolu göstərmək/gizlətmək üçün funksiya
+  const handleTogglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
+  };
+
   return (
     <StyledBox>
       <Fade in timeout={500}>
@@ -101,7 +118,7 @@ function Login({ setToken }) {
             variant="h5"
             gutterBottom
             sx={{
-              color: '#212121', // Dark gray text
+              color: '#212121',
               fontWeight: '500',
               textAlign: 'center',
               mb: 3,
@@ -116,14 +133,29 @@ function Login({ setToken }) {
               onChange={(e) => setUsername(e.target.value)}
               variant="outlined"
               fullWidth
+              onKeyDown={handleKeyDown} // Enter düyməsi üçün
             />
             <FormalTextField
               label="Parol"
-              type="password"
+              type={showPassword ? 'text' : 'password'} // Parolun görünməsi/gizlənməsi
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               variant="outlined"
               fullWidth
+              onKeyDown={handleKeyDown} // Enter düyməsi üçün
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={handleTogglePasswordVisibility}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             <FormalButton
               variant="contained"

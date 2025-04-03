@@ -18,12 +18,12 @@ import toast from 'react-hot-toast';
 
 const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) => {
   const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
-  const years = Array.from({ length: 11 }, (_, i) => 2020 + i);
+  const years = Array.from({ length: 11 }, (_, i) => 2025 + i);
 
   const [availableExecutors, setAvailableExecutors] = useState([]);
-  const [userRole, setUserRole] = useState(null); // State to store user role
+  const [userRole, setUserRole] = useState(null);
+  const [removedNoteIds, setRemovedNoteIds] = useState([]); // New state to track removed note IDs
 
-  // Fetch executors and user role when modal opens
   useEffect(() => {
     if (open) {
       const token = localStorage.getItem('token');
@@ -32,7 +32,6 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
         return;
       }
 
-      // Fetch Executors
       fetch('http://192.168.100.123:5051/api/Executors/GetAll', {
         method: 'GET',
         headers: {
@@ -54,7 +53,6 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
           setAvailableExecutors([]);
         });
 
-      // Fetch User Role from /api/Auth/Me
       fetch('http://192.168.100.123:5051/api/Auth/Me', {
         method: 'GET',
         headers: {
@@ -69,12 +67,15 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
           return response.json();
         })
         .then((data) => {
-          setUserRole(data.role); // Set the user role from the response
+          setUserRole(data.role);
         })
         .catch((error) => {
           console.error('İstifadəçi rolu çəkilmədi:', error);
           setUserRole(null);
         });
+
+      // Reset removedNoteIds when modal opens
+      setRemovedNoteIds([]);
     }
   }, [open]);
 
@@ -95,36 +96,17 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
     });
   };
 
-  const handleRemoveNote = async (noteId) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error('Autentifikasiya tokeni tapılmadı');
-      return;
+  // Updated handleRemoveNote to filter locally and track removed note IDs
+  const handleRemoveNote = (noteId) => {
+    if (!updateData.notes.find((note) => note.id === noteId)?.isNew) {
+      // Only add to removedNoteIds if the note is not new (i.e., it exists on the server)
+      setRemovedNoteIds((prev) => [...prev, noteId]);
     }
-
-    try {
-      const response = await fetch(`http://192.168.100.123:5051/api/Notes/Delete/${noteId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        setUpdateData({
-          ...updateData,
-          notes: updateData.notes.filter((note) => note.id !== noteId),
-        });
-        toast.success('Qeyd uğurla silindi');
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || 'Qeyd silinmədi');
-      }
-    } catch (error) {
-      console.error('DELETE xətası:', error);
-      toast.error('Xəta baş verdi, yenidən cəhd edin');
-    }
+    setUpdateData({
+      ...updateData,
+      notes: updateData.notes.filter((note) => note.id !== noteId),
+    });
+    
   };
 
   const handleNoteChange = (index, field, value) => {
@@ -152,23 +134,42 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
       return;
     }
 
-    const payload = {
-      id: updateData.id,
-      title: updateData.title,
-      name: updateData.name,
-      percentage: percentage.toString(),
-      startDate: new Date(updateData.startDate).toISOString(),
-      endDate: new Date(updateData.endDate).toISOString(),
-      executorIds: updateData.executors.map((exec) => exec.id),
-      notes: updateData.notes.map((note) => ({
-        id: note.isNew ? null : note.id,
-        content: note.content,
-        month: parseInt(note.month) || 0,
-        year: parseInt(note.year) || 0,
-      })),
-    };
-
     try {
+      // Step 1: Send DELETE requests for removed notes
+      for (const noteId of removedNoteIds) {
+        const response = await fetch(`http://192.168.100.123:5051/api/Notes/Delete/${noteId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          toast.error(`Qeyd ${noteId} silinmədi: ${errorData.message || 'Xəta baş verdi'}`);
+          return; // Stop if any DELETE fails
+        }
+      }
+
+      // Step 2: Prepare payload with remaining notes
+      const payload = {
+        id: updateData.id,
+        title: updateData.title,
+        name: updateData.name,
+        percentage: percentage.toString(),
+        startDate: new Date(updateData.startDate).toISOString(),
+        endDate: new Date(updateData.endDate).toISOString(),
+        executorIds: updateData.executors.map((exec) => exec.id),
+        notes: updateData.notes.map((note) => ({
+          id: note.isNew ? null : note.id,
+          content: note.content,
+          month: parseInt(note.month) || 0,
+          year: parseInt(note.year) || 0,
+        })),
+      };
+
+      // Step 3: Send PUT request to update the data
       const response = await fetch(`http://192.168.100.123:5051/api/StrategyEvents/Update/${updateData.id}`, {
         method: 'PUT',
         headers: {
@@ -188,7 +189,7 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
         toast.error(errorData.message || 'Məlumat yenilənmədi');
       }
     } catch (error) {
-      console.error('PUT xətası:', error);
+      console.error('Xəta baş verdi:', error);
       toast.error('Xəta baş verdi, yenidən cəhd edin');
     }
   };
@@ -209,13 +210,7 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
         {updateData ? (
           <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
-              <FormField
-                label="ID"
-                value={updateData.id}
-                readOnly
-                sx={{ bgcolor: '#f5f5f5' }}
-              />
-              {userRole !== 'Regular' && ( // Hide if role is Regular
+              {userRole !== 'Regular' && (
                 <>
                   <FormField
                     label="Nömrə"
@@ -241,25 +236,27 @@ const UpdateDataModal = ({ open, onClose, updateData, setUpdateData, onSave }) =
                 inputProps={{ min: 1, max: 100, step: 1 }}
                 sx={{ mt: 2 }}
               />
-              <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                <FormField
-                  label="Başlama Tarixi"
-                  type="date"
-                  value={new Date(updateData.startDate).toISOString().slice(0, 10)}
-                  onChange={(e) => setUpdateData({ ...updateData, startDate: e.target.value })}
-                  sx={{ flex: 1 }}
-                />
-                <FormField
-                  label="Bitmə Tarixi"
-                  type="date"
-                  value={new Date(updateData.endDate).toISOString().slice(0, 10)}
-                  onChange={(e) => setUpdateData({ ...updateData, endDate: e.target.value })}
-                  sx={{ flex: 1 }}
-                />
-              </Box>
+              {userRole !== 'Regular' && (
+                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                  <FormField
+                    label="Başlama Tarixi"
+                    type="date"
+                    value={new Date(updateData.startDate).toISOString().slice(0, 10)}
+                    onChange={(e) => setUpdateData({ ...updateData, startDate: e.target.value })}
+                    sx={{ flex: 1 }}
+                  />
+                  <FormField
+                    label="Bitmə Tarixi"
+                    type="date"
+                    value={new Date(updateData.endDate).toISOString().slice(0, 10)}
+                    onChange={(e) => setUpdateData({ ...updateData, endDate: e.target.value })}
+                    sx={{ flex: 1 }}
+                  />
+                </Box>
+              )}
             </Paper>
 
-            {userRole !== 'Regular' && ( // Hide Executors section if role is Regular
+            {userRole !== 'Regular' && (
               <Paper elevation={1} sx={{ p: 2, borderRadius: 2 }}>
                 <Typography variant="h6" color="primary" sx={{ mb: 2 }}>
                   İcraçılar
