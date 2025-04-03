@@ -22,7 +22,9 @@ import DeleteDialog from "./DeleteDialog";
 import AddDataModal from "./AddDataModal";
 import AddNoteModal from "./AddNoteModal";
 import toast from "react-hot-toast";
-import { styled } from "@mui/system";
+import { fontSize, styled } from "@mui/system";
+import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
+import RemoveIcon from '@mui/icons-material/Remove';
 
 // Styled component for user info
 const UserInfoBox = styled(Box)({
@@ -621,7 +623,7 @@ function TableComponent() {
               <TableCell sx={{ minWidth: 100 }}>İcra Faizi</TableCell>
               {selectedMonths.map((month) => (
                 <TableCell key={month} sx={{ minWidth: 200 }}>
-                  {month} 
+                  {month}
                 </TableCell>
               ))}
               <TableCell sx={{ minWidth: 200 }}>Əməliyyatlar</TableCell>
@@ -686,16 +688,21 @@ function TableComponent() {
                       <TableCell key={month}>
                         <Box
                           sx={{
-                            maxHeight: "100px", // 5 qeyd üçün təxmini hündürlük (hər qeyd ~24px hesablanıb)
+                            maxHeight: "120px",
                             overflowY:
-                              matchingNotes.length > 5 ? "auto" : "hidden", // 5-dən çox qeyd varsa scroll
+                              matchingNotes.length > 0 ? "auto" : "hidden",
                             paddingRight:
-                              matchingNotes.length > 5 ? "8px" : "0", // Scrollbar üçün sağdan boşluq
+                              matchingNotes.length > 0 ? "8px" : "0",
                           }}
                         >
                           {matchingNotes.length > 0
                             ? matchingNotes.map((note, index) => (
-                                <div key={index}>- {note.content}</div>
+                              <div key={index} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>
+                                <RemoveIcon sx={{ fontSize: "medium" }} />
+                              </span>
+                              {note.content}
+                            </div>
                               ))
                             : "Məlumat yoxdur"}
                         </Box>

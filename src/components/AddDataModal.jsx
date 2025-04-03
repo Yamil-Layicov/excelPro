@@ -188,10 +188,13 @@ function AddDataModal({ open, onClose, onAddData }) {
     }));
     setValidationErrors((prev) => ({
       ...prev,
-      notes: [...prev.notes, { content: 'Boş qala bilməz', month: 'Boş qala bilməz', year: 'Boş qala bilməz' }],
+      notes: [
+        ...(prev.notes || []),
+        { content: 'Boş qala bilməz', month: 'Boş qala bilməz', year: 'Boş qala bilməz' },
+      ],
     }));
   };
-
+  
   const removeNote = (index) => {
     setFormData((prev) => ({
       ...prev,
@@ -199,7 +202,7 @@ function AddDataModal({ open, onClose, onAddData }) {
     }));
     setValidationErrors((prev) => ({
       ...prev,
-      notes: prev.notes.filter((_, i) => i !== index),
+      notes: (prev.notes || []).filter((_, i) => i !== index),
     }));
   };
 
