@@ -111,7 +111,7 @@ function AddNoteModal({ open, onClose, eventId, onAddNote }) {
           value={noteData.content}
           onChange={handleChange}
           multiline
-          rows={3}
+          rows={5}
           error={!!formErrors.content}
           helperText={formErrors.content}
         />
