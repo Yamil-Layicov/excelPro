@@ -74,24 +74,6 @@ function Login({ setToken }) {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  // Tokenin vaxtını dekod edən funksiya (JWT üçün)
-  const decodeToken = (token) => {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      return JSON.parse(jsonPayload);
-    } catch (error) {
-      console.error('Token dekod edilmədi:', error);
-      return null;
-    }
-  };
-
   const handleLogin = async () => {
     try {
       const response = await fetch('http://192.168.100.123:5051/api/Auth/Login', {
@@ -109,23 +91,13 @@ function Login({ setToken }) {
         setToken(token);
         localStorage.setItem('token', token); // Tokeni localStorage-a yazırıq
 
-        // Tokenin bitmə vaxtını yoxlayırıq
-        const decodedToken = decodeToken(token);
-        if (decodedToken && decodedToken.exp) {
-          const expirationTime = decodedToken.exp * 1000; // Saniyəni millisaniyəyə çeviririk
-          const currentTime = Date.now();
-
-          if (expirationTime > currentTime) {
-            // Tokenin vaxtı bitənə qədər gözləyib silirik
-            const timeout = expirationTime - currentTime;
-            setTimeout(() => {
-              localStorage.removeItem('token');
-              setToken(null); // State-dən də silirik
-              toast.error('Tokenin vaxtı bitdi, yenidən giriş edin');
-              navigate('/login', { replace: true });
-            }, timeout);
-          }
-        }
+        // 1 dəqiqə (60 saniyə) sonra tokeni silirik
+        setTimeout(() => {
+          localStorage.removeItem('token');
+          setToken(null);
+          toast.error('Tokenin vaxtı bitdi, yenidən giriş edin');
+          navigate('/login', { replace: true });
+        }, 12 * 60 * 60 * 1000);
 
         toast.success('Uğurlu giriş!', { duration: 3000 });
         navigate('/table', { replace: true });
