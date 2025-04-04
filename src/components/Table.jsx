@@ -622,7 +622,7 @@ function TableComponent() {
               <TableCell sx={{ minWidth: 110 }}>Bitmə Tarixi</TableCell>
               <TableCell sx={{ minWidth: 100 }}>İcra Faizi</TableCell>
               {selectedMonths.map((month) => (
-                <TableCell key={month} sx={{ minWidth: 200 }}>
+                <TableCell key={month} sx={{ minWidth: 250 }}>
                   {month}
                 </TableCell>
               ))}
@@ -700,7 +700,7 @@ function TableComponent() {
                               sx={{
                                 display: "flex",
                                 flexDirection: "column",
-                                gap: "18px",
+                                gap: "8px",
                               }}
                             >
                               {matchingNotes.map((note, index) => (
