@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'; // Added useEffect
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TextField,
@@ -14,47 +14,59 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import toast from 'react-hot-toast';
 import { styled } from '@mui/system';
 
-// Custom styled components remain the same
+// Custom styled components
 const StyledBox = styled(Box)({
-  // ... same as before
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '100vh',
+  backgroundColor: '#f5f6f5',
+  padding: '1rem',
 });
 
 const FormContainer = styled(Box)({
-  // ... same as before
+  padding: '2rem',
+  width: '360px',
+  backgroundColor: '#ffffff',
+  borderRadius: '8px',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+  border: '1px solid #e0e0e0',
 });
 
 const FormalTextField = styled(TextField)({
-  // ... same as before
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': {
+      borderColor: '#d0d0d0',
+    },
+    '&:hover fieldset': {
+      borderColor: '#757575',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: '#1976d2',
+    },
+  },
+  '& .MuiInputLabel-root': {
+    color: '#616161',
+  },
+  '& .MuiInputBase-input': {
+    color: '#212121',
+  },
 });
 
 const FormalButton = styled(Button)({
-  // ... same as before
+  backgroundColor: '#1976d2',
+  color: '#ffffff',
+  padding: '10px 0',
+  fontWeight: '500',
+  textTransform: 'none',
+  fontSize: '16px',
+  borderRadius: '6px',
+  transition: 'background-color 0.3s ease',
+  '&:hover': {
+    backgroundColor: '#1565c0',
+  },
 });
-
-// Helper functions to manage token with expiration
-const setTokenWithExpiry = (token, expiryInHours = 12) => {
-  const now = new Date();
-  const expiryTime = now.getTime() + expiryInHours * 60 * 60 * 1000;
-  const tokenData = {
-    value: token,
-    expiry: expiryTime,
-  };
-  localStorage.setItem('token', JSON.stringify(tokenData));
-};
-
-const getToken = () => {
-  const tokenString = localStorage.getItem('token');
-  if (!tokenString) return null;
-  
-  const tokenData = JSON.parse(tokenString);
-  const now = new Date();
-  
-  if (now.getTime() > tokenData.expiry) {
-    localStorage.removeItem('token');
-    return null;
-  }
-  return tokenData.value;
-};
 
 function Login({ setToken }) {
   const [username, setUsername] = useState('');
@@ -62,14 +74,23 @@ function Login({ setToken }) {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  // Check token expiration on component mount
-  useEffect(() => {
-    const token = getToken();
-    if (token) {
-      setToken(token);
-      navigate('/table', { replace: true });
+  // Tokenin vaxtını dekod edən funksiya (JWT üçün)
+  const decodeToken = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Token dekod edilmədi:', error);
+      return null;
     }
-  }, [setToken, navigate]);
+  };
 
   const handleLogin = async () => {
     try {
@@ -84,8 +105,28 @@ function Login({ setToken }) {
       const data = await response.json();
 
       if (response.ok && data.token) {
-        setTokenWithExpiry(data.token, 12); 
-        setToken(data.token);
+        const token = data.token;
+        setToken(token);
+        localStorage.setItem('token', token); // Tokeni localStorage-a yazırıq
+
+        // Tokenin bitmə vaxtını yoxlayırıq
+        const decodedToken = decodeToken(token);
+        if (decodedToken && decodedToken.exp) {
+          const expirationTime = decodedToken.exp * 1000; // Saniyəni millisaniyəyə çeviririk
+          const currentTime = Date.now();
+
+          if (expirationTime > currentTime) {
+            // Tokenin vaxtı bitənə qədər gözləyib silirik
+            const timeout = expirationTime - currentTime;
+            setTimeout(() => {
+              localStorage.removeItem('token');
+              setToken(null); // State-dən də silirik
+              toast.error('Tokenin vaxtı bitdi, yenidən giriş edin');
+              navigate('/login', { replace: true });
+            }, timeout);
+          }
+        }
+
         toast.success('Uğurlu giriş!', { duration: 3000 });
         navigate('/table', { replace: true });
       } else {
