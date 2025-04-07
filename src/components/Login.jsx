@@ -97,7 +97,7 @@ function Login({ setToken }) {
           setToken(null);
           toast.error('Tokenin vaxtı bitdi, yenidən giriş edin');
           navigate('/login', { replace: true });
-        }, 12 * 60 * 60 * 1000);
+        }, 12 * 50 * 50 * 1000);
 
         toast.success('Uğurlu giriş!', { duration: 3000 });
         navigate('/table', { replace: true });
