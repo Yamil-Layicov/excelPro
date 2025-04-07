@@ -632,186 +632,205 @@ function TableComponent() {
           <TableBody>
             {tableData
               .filter((row) => row && typeof row === "object" && row.id)
-              .map((row) => (
-                <TableRow
-                  key={row.id}
-                  sx={{
-                    "&:hover": {
-                      backgroundColor: "#f4f6f8",
-                      transition: "background-color 0.3s ease",
-                    },
-                  }}
-                >
-                  <TableCell>{row.title}</TableCell>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>
-                    {row.executors?.map((exec) => exec.name).join(", ") ||
-                      "Yoxdur"}
-                  </TableCell>
-                  <TableCell>
-                    {row.startDate
-                      ? new Date(row.startDate).toLocaleDateString()
-                      : "Yoxdur"}
-                  </TableCell>
-                  <TableCell>
-                    {row.endDate
-                      ? new Date(row.endDate).toLocaleDateString()
-                      : "Yoxdur"}
-                  </TableCell>
-                  <TableCell>
-                    {isNaN(parseFloat(row.percentage)) ? (
-                      row.percentage
-                    ) : (
-                      <Box
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 1,
-                          color:
-                            parseFloat(row.percentage) >= 75
-                              ? "#2e7d32"
-                              : parseFloat(row.percentage) >= 50
-                              ? "#ed6c02"
-                              : "#d32f2f",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {`${parseFloat(row.percentage)}%`}
-                      </Box>
-                    )}
-                  </TableCell>
-                  {selectedMonths.map((month) => {
-                    const monthIndex = months.indexOf(month) + 1;
-                    const matchingNotes =
-                      row.notes?.filter((n) => n?.month === monthIndex) || [];
-                    return (
-                      <TableCell key={month}>
+              .map((row) => {
+                // Cari tarixi alırıq
+                const currentDate = new Date();
+                // Bitmə tarixini Date obyektinə çeviririk
+                const endDate = row.endDate ? new Date(row.endDate) : null;
+                // Tarix müqayisəsi: əgər endDate cari tarixdən kiçikdirsə (keçmişdisə)
+                const isOverdue = endDate && endDate < currentDate;
+
+                // Tarixi "gün.ay.il" formatına çevirmək üçün funksiya
+                const formatDate = (dateString) => {
+                  if (!dateString) return "Yoxdur";
+                  const date = new Date(dateString);
+                  const day = String(date.getDate()).padStart(2, "0");
+                  const month = String(date.getMonth() + 1).padStart(2, "0"); // Ay 0-dan başladığı üçün +1 edirik
+                  const year = date.getFullYear();
+                  return `${day}.${month}.${year}`;
+                };
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "#f4f6f8",
+                        transition: "background-color 0.3s ease",
+                      },
+                    }}
+                  >
+                    <TableCell>{row.title}</TableCell>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell>
+                      {row.executors?.map((exec) => exec.name).join(", ") ||
+                        "Yoxdur"}
+                    </TableCell>
+                    <TableCell>{formatDate(row.startDate)}</TableCell>
+                    <TableCell
+                      sx={{
+                        // Əgər bitmə tarixi keçibsə, bu sütunun arxa fonunu qırmızı edirik
+                        ...(isOverdue && {
+                          backgroundColor: "#ff6a7f",
+                        }),
+                      }}
+                    >
+                      {formatDate(row.endDate)}
+                    </TableCell>
+                    <TableCell>
+                      {isNaN(parseFloat(row.percentage)) ? (
+                        row.percentage
+                      ) : (
                         <Box
                           sx={{
-                            maxHeight: "120px",
-                            overflowY:
-                              matchingNotes.length > 0 ? "auto" : "hidden",
-                            paddingRight:
-                              matchingNotes.length > 0 ? "8px" : "0",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 1,
+                            color:
+                              parseFloat(row.percentage) >= 75
+                                ? "#2e7d32"
+                                : parseFloat(row.percentage) >= 50
+                                ? "#ed6c02"
+                                : "#d32f2f",
+                            fontWeight: 500,
                           }}
                         >
-                          {matchingNotes.length > 0 ? (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "8px",
-                              }}
-                            >
-                              {matchingNotes.map((note, index) => (
-                                <div
-                                  key={index}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                  }}
-                                >
-                                  <span
+                          {`${parseFloat(row.percentage)}%`}
+                        </Box>
+                      )}
+                    </TableCell>
+                    {selectedMonths.map((month) => {
+                      const monthIndex = months.indexOf(month) + 1;
+                      const matchingNotes =
+                        row.notes?.filter((n) => n?.month === monthIndex) || [];
+                      return (
+                        <TableCell key={month}>
+                          <Box
+                            sx={{
+                              maxHeight: "120px",
+                              overflowY:
+                                matchingNotes.length > 0 ? "auto" : "hidden",
+                              paddingRight:
+                                matchingNotes.length > 0 ? "8px" : "0",
+                            }}
+                          >
+                            {matchingNotes.length > 0 ? (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "8px",
+                                }}
+                              >
+                                {matchingNotes.map((note, index) => (
+                                  <div
+                                    key={index}
                                     style={{
                                       display: "flex",
                                       alignItems: "center",
-                                      justifyContent: "center",
-                                      fontWeight: "bold",
+                                      gap: "4px",
                                     }}
                                   >
-                                    <RemoveIcon sx={{ fontSize: "medium" }} />
-                                  </span>
-                                  {note.content}
-                                </div>
-                              ))}
-                            </Box>
-                          ) : (
-                            "Məlumat yoxdur"
-                          )}
-                        </Box>
-                      </TableCell>
-                    );
-                  })}
-                  <TableCell>
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                      {userData.role !== "Regular" && (
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          onClick={() => handleDeleteClick(row.id)}
-                          sx={{
-                            borderRadius: "7px",
-                            textTransform: "none",
-                            fontSize: "0.75rem",
-                            padding: "4px 8px",
-                            "&:hover": {
-                              backgroundColor: "#d32f2f",
-                              color: "#ffffff",
-                              borderColor: "#d32f2f",
-                              transform: "scale(1.02)",
-                              transition: "all 0.3s ease",
-                            },
-                          }}
-                        >
-                          Sil
-                        </Button>
-                      )}
-                      {row.canUpdate && (
-                        <>
+                                    <span
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      <RemoveIcon sx={{ fontSize: "medium" }} />
+                                    </span>
+                                    {note.content}
+                                  </div>
+                                ))}
+                              </Box>
+                            ) : (
+                              "Məlumat yoxdur"
+                            )}
+                          </Box>
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell>
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        {userData.role !== "Regular" && (
                           <Button
                             variant="outlined"
-                            color="primary"
+                            color="error"
                             size="small"
-                            onClick={() => handleUpdateClick(row.id)}
+                            onClick={() => handleDeleteClick(row.id)}
                             sx={{
                               borderRadius: "7px",
                               textTransform: "none",
                               fontSize: "0.75rem",
                               padding: "4px 8px",
                               "&:hover": {
-                                backgroundColor: "#1a3c34",
+                                backgroundColor: "#d32f2f",
                                 color: "#ffffff",
-                                borderColor: "#1a3c34",
+                                borderColor: "#d32f2f",
                                 transform: "scale(1.02)",
                                 transition: "all 0.3s ease",
                               },
                             }}
                           >
-                            Redaktə
+                            Sil
                           </Button>
-                          <Button
-                            variant="outlined"
-                            color="success"
-                            size="small"
-                            onClick={() => handleOpenAddNoteModal(row.id)}
-                            sx={{
-                              borderRadius: "7px",
-                              textTransform: "none",
-                              fontSize: "0.75rem",
-                              padding: "4px 8px",
-                              "&:hover": {
-                                backgroundColor: "#2e7d32",
-                                color: "#ffffff",
-                                borderColor: "#2e7d32",
-                                transform: "scale(1.02)",
-                                transition: "all 0.3s ease",
-                              },
-                            }}
-                          >
-                            Yeni Qeyd
-                          </Button>
-                        </>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        )}
+                        {row.canUpdate && (
+                          <>
+                            <Button
+                              variant="outlined"
+                              color="primary"
+                              size="small"
+                              onClick={() => handleUpdateClick(row.id)}
+                              sx={{
+                                borderRadius: "7px",
+                                textTransform: "none",
+                                fontSize: "0.75rem",
+                                padding: "4px 8px",
+                                "&:hover": {
+                                  backgroundColor: "#1a3c34",
+                                  color: "#ffffff",
+                                  borderColor: "#1a3c34",
+                                  transform: "scale(1.02)",
+                                  transition: "all 0.3s ease",
+                                },
+                              }}
+                            >
+                              Redaktə
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="success"
+                              size="small"
+                              onClick={() => handleOpenAddNoteModal(row.id)}
+                              sx={{
+                                borderRadius: "7px",
+                                textTransform: "none",
+                                fontSize: "0.75rem",
+                                padding: "4px 8px",
+                                "&:hover": {
+                                  backgroundColor: "#2e7d32",
+                                  color: "#ffffff",
+                                  borderColor: "#2e7d32",
+                                  transform: "scale(1.02)",
+                                  transition: "all 0.3s ease",
+                                },
+                              }}
+                            >
+                              Yeni Qeyd
+                            </Button>
+                          </>
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
           </TableBody>
         </MuiTable>
       </TableContainer>
-
       <DeleteDialog
         open={openDeleteDialog}
         onClose={handleCloseDeleteDialog}
