@@ -15,6 +15,7 @@ import {
 import CheckIcon from '@mui/icons-material/Check';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ClearIcon from '@mui/icons-material/Clear';
 import toast from 'react-hot-toast';
 import FormField from './FormField';
 import { styled } from '@mui/system';
@@ -53,11 +54,25 @@ const StyledButton = styled(Button)({
   },
 });
 
+const ClearButton = styled(Button)({
+  backgroundColor: '#d32f2f',
+  color: '#fff',
+  padding: '6px 12px',
+  fontWeight: '500',
+  textTransform: 'none',
+  borderRadius: '8px',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    backgroundColor: '#b71c1c',
+    boxShadow: '0 4px 12px rgba(211, 47, 47, 0.3)',
+  },
+});
+
 const AddNoteButton = styled(Button)({
   borderColor: '#388e3c',
   color: '#388e3c',
   padding: '6px 12px',
-  fontSize: '0.85rem',
+  fontSize: '0. censor85rem',
   textTransform: 'none',
   borderRadius: '6px',
   '&:hover': {
@@ -239,6 +254,24 @@ function AddDataModal({ open, onClose, onAddData }) {
     }));
   };
 
+  const handleClear = () => {
+    setFormData({
+      title: '',
+      name: '',
+      percentage: '',
+      startDate: null,
+      endDate: null,
+      executorIds: [],
+      notes: [{ content: '', month: '', year: '' }],
+    });
+    setPercentageError('');
+    setDateError('');
+    setValidationErrors({
+      notes: [{ content: '', month: '', year: '' }],
+    });
+    toast.success('Form təmizləndi');
+  };
+
   const validateForm = () => {
     const errors = {};
     if (!formData.title) errors.title = 'Boş qala bilməz';
@@ -332,13 +365,22 @@ function AddDataModal({ open, onClose, onAddData }) {
       <Modal open={open} onClose={onClose}>
         <Fade in={open}>
           <StyledModalBox>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: '600', color: '#1976d2', mb: 3 }}
-            >
-              Strategiya üzrə tədbirlər
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: '600', color: '#1976d2' }}
+              >
+                Strategiya üzrə tədbirlər
+              </Typography>
+              <ClearButton
+                variant="contained"
+                onClick={handleClear}
+                startIcon={<ClearIcon />}
+                size="small"
+              >
+                Təmizlə
+              </ClearButton>
+            </Box>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <FormField
@@ -350,12 +392,12 @@ function AddDataModal({ open, onClose, onAddData }) {
                 helperText={validationErrors.title}
               />
               <FormField
-                label="Strategiya üzrə tədbirlər"
+                label="Strategiya üzrə tədbir"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
                 multiline
-                rows={3}
+                rows={4}
                 error={!!validationErrors.name}
                 helperText={validationErrors.name}
               />

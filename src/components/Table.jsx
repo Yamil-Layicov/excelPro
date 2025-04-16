@@ -16,6 +16,7 @@ import {
   Button,
   Box,
   Typography,
+  IconButton,
 } from "@mui/material";
 import UpdateDataModal from "./UpdateDataModal";
 import DeleteDialog from "./DeleteDialog";
@@ -25,6 +26,8 @@ import toast from "react-hot-toast";
 import { fontSize, styled } from "@mui/system";
 import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
 import RemoveIcon from "@mui/icons-material/Remove";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 
 // Styled component for user info
 const UserInfoBox = styled(Box)({
@@ -75,6 +78,7 @@ function TableComponent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userData, setUserData] = useState({ id: "", fullname: "", role: "" });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
 
   // Fetch user data from /api/Auth/Me
   useEffect(() => {
@@ -131,6 +135,13 @@ function TableComponent() {
         );
 
         if (!response.ok) {
+          if (response.status === 401) {
+            localStorage.removeItem("token"); // Remove token on 401
+            toast.error(
+              "Sessiya başa çatdı. Zəhmət olmasa yenidən daxil olun."
+            );
+            window.location.reload(); // Optional: Reload to redirect to login
+          }
           throw new Error(`HTTP xətası! Status: ${response.status}`);
         }
 
@@ -186,8 +197,12 @@ function TableComponent() {
       });
 
       if (!response.ok) {
-        if (response.status === 401)
+        if (response.status === 401) {
+          localStorage.removeItem("token"); // Remove token on 401
+          toast.error("Sessiya başa çatdı. Zəhmət olmasa yenidən daxil olun.");
+          window.location.reload(); // Optional: Reload to redirect to login
           throw new Error("Unauthorized: Invalid or expired token");
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -210,6 +225,34 @@ function TableComponent() {
   useEffect(() => {
     fetchData();
   }, [selectedMonths, selectedYear, selectedExecutors]);
+
+  // Sorting function
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+
+    setSortConfig({ key, direction });
+
+    const sortedData = [...tableData].sort((a, b) => {
+      if (key === "percentage") {
+        const valueA = isNaN(parseFloat(a[key]))
+          ? -Infinity
+          : parseFloat(a[key]);
+        const valueB = isNaN(parseFloat(b[key]))
+          ? -Infinity
+          : parseFloat(b[key]);
+        return direction === "asc" ? valueA - valueB : valueB - valueA;
+      } else {
+        const dateA = a[key] ? new Date(a[key]) : new Date(0);
+        const dateB = b[key] ? new Date(b[key]) : new Date(0);
+        return direction === "asc" ? dateA - dateB : dateB - dateA;
+      }
+    });
+
+    setTableData(sortedData);
+  };
 
   const handleMonthChange = (event) => {
     const value = event.target.value;
@@ -450,13 +493,6 @@ function TableComponent() {
         >
           Çıxış
         </Button>
-        {userData.fullname && (
-          <UserInfoBox>
-            <Typography variant="body1" sx={{ fontWeight: "500" }}>
-              {userData.fullname}
-            </Typography>
-          </UserInfoBox>
-        )}
       </Box>
 
       {/* Filters Section */}
@@ -618,9 +654,57 @@ function TableComponent() {
                 Strategiya üzrə tədbirlər
               </TableCell>
               <TableCell sx={{ minWidth: 250 }}>İcraçılar</TableCell>
-              <TableCell sx={{ minWidth: 110 }}>Başlama Tarixi</TableCell>
-              <TableCell sx={{ minWidth: 110 }}>Bitmə Tarixi</TableCell>
-              <TableCell sx={{ minWidth: 100 }}>İcra Faizi</TableCell>
+              <TableCell sx={{ minWidth: 140 }}>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  Başlama Tarixi
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSort("startDate")}
+                    sx={{ color: "#ffffff" }}
+                  >
+                    {sortConfig.key === "startDate" &&
+                    sortConfig.direction === "asc" ? (
+                      <ArrowUpwardIcon fontSize="small" />
+                    ) : (
+                      <ArrowDownwardIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </Box>
+              </TableCell>
+              <TableCell sx={{ minWidth: 130 }}>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  Bitmə Tarixi
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSort("endDate")}
+                    sx={{ color: "#ffffff" }}
+                  >
+                    {sortConfig.key === "endDate" &&
+                    sortConfig.direction === "asc" ? (
+                      <ArrowUpwardIcon fontSize="small" />
+                    ) : (
+                      <ArrowDownwardIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </Box>
+              </TableCell>
+              <TableCell sx={{ minWidth: 99 }}>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  İcra Faizi
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSort("percentage")}
+                    sx={{ color: "#ffffff" }}
+                  >
+                    {sortConfig.key === "percentage" &&
+                    sortConfig.direction === "asc" ? (
+                      <ArrowUpwardIcon fontSize="small" />
+                    ) : (
+                      <ArrowDownwardIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </Box>
+              </TableCell>
               {selectedMonths.map((month) => (
                 <TableCell key={month} sx={{ minWidth: 250 }}>
                   {month}
@@ -669,7 +753,6 @@ function TableComponent() {
                     <TableCell>{formatDate(row.startDate)}</TableCell>
                     <TableCell
                       sx={{
-                        // Əgər bitmə tarixi keçibsə, bu sütunun arxa fonunu qırmızı edirik
                         ...(isOverdue && {
                           backgroundColor: "#ff6a7f",
                         }),
@@ -727,21 +810,19 @@ function TableComponent() {
                                     key={index}
                                     style={{
                                       display: "flex",
-                                      alignItems: "center",
-                                      gap: "4px",
+                                      alignItems: "flex-start",
+                                      gap: "2px",
                                     }}
                                   >
                                     <span
                                       style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
                                         fontWeight: "bold",
+                                        minWidth: "20px",
                                       }}
                                     >
-                                      <RemoveIcon sx={{ fontSize: "medium" }} />
+                                      {`${index + 1}.`}
                                     </span>
-                                    {note.content}
+                                    <span>{note.content}</span>
                                   </div>
                                 ))}
                               </Box>
