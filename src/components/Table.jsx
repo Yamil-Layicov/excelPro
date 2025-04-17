@@ -23,9 +23,7 @@ import DeleteDialog from "./DeleteDialog";
 import AddDataModal from "./AddDataModal";
 import AddNoteModal from "./AddNoteModal";
 import toast from "react-hot-toast";
-import { fontSize, styled } from "@mui/system";
-import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
-import RemoveIcon from "@mui/icons-material/Remove";
+import { styled } from "@mui/system";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 
@@ -79,6 +77,21 @@ function TableComponent() {
   const [error, setError] = useState(null);
   const [userData, setUserData] = useState({ id: "", fullname: "", role: "" });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
+  const [showTableScroll, setShowTableScroll] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      if (scrollPosition >= 250) {
+        setShowTableScroll(true);
+      } else {
+        setShowTableScroll(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Fetch user data from /api/Auth/Me
   useEffect(() => {
@@ -622,9 +635,18 @@ function TableComponent() {
         sx={{
           maxWidth: "100%",
           overflowX: "auto",
+          overflowY: showTableScroll ? "auto" : "hidden",
           borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+          boxShadow: "0 4px 12px rgba(255, 0, 0, 0.05)",
           backgroundColor: "#ffffff",
+          maxHeight: "90vh",
+          "&::-webkit-scrollbar-thumb": {
+            background: "#F3F5F7",
+            borderRadius: "10px",
+          },
+          "&::-webkit-scrollbar": {
+            width: "0.2px",
+          },
         }}
       >
         <MuiTable
@@ -638,10 +660,16 @@ function TableComponent() {
           }}
           aria-label="project table"
         >
-          <TableHead>
+          <TableHead
+            sx={{
+              position: "sticky",
+              top: 0,
+              zIndex: 1,
+              backgroundColor: "#1a3c34",
+            }}
+          >
             <TableRow
               sx={{
-                backgroundColor: "#1a3c34",
                 "& .MuiTableCell-head": {
                   color: "#ffffff",
                   fontWeight: 600,
@@ -717,19 +745,15 @@ function TableComponent() {
             {tableData
               .filter((row) => row && typeof row === "object" && row.id)
               .map((row) => {
-                // Cari tarixi alırıq
                 const currentDate = new Date();
-                // Bitmə tarixini Date obyektinə çeviririk
                 const endDate = row.endDate ? new Date(row.endDate) : null;
-                // Tarix müqayisəsi: əgər endDate cari tarixdən kiçikdirsə (keçmişdisə)
                 const isOverdue = endDate && endDate < currentDate;
 
-                // Tarixi "gün.ay.il" formatına çevirmək üçün funksiya
                 const formatDate = (dateString) => {
                   if (!dateString) return "Yoxdur";
                   const date = new Date(dateString);
                   const day = String(date.getDate()).padStart(2, "0");
-                  const month = String(date.getMonth() + 1).padStart(2, "0"); // Ay 0-dan başladığı üçün +1 edirik
+                  const month = String(date.getMonth() + 1).padStart(2, "0");
                   const year = date.getFullYear();
                   return `${day}.${month}.${year}`;
                 };
@@ -795,6 +819,13 @@ function TableComponent() {
                                 matchingNotes.length > 0 ? "auto" : "hidden",
                               paddingRight:
                                 matchingNotes.length > 0 ? "8px" : "0",
+                              "&::-webkit-scrollbar-thumb": {
+                                background: "#F3F5F7",
+                                borderRadius: "10px",
+                              },
+                              "&::-webkit-scrollbar": {
+                                width: "6px",
+                              },
                             }}
                           >
                             {matchingNotes.length > 0 ? (
@@ -823,6 +854,14 @@ function TableComponent() {
                                       {`${index + 1}.`}
                                     </span>
                                     <span>{note.content}</span>
+                                    <span>
+                                      {note.changes &&
+                                        [...new Set(note.changes.map((change) => change.updatedBy)),].map((updatedBy) => (
+                                          <span style={{paddingLeft:"5px"}} key={updatedBy}>
+                                            <strong>{updatedBy}</strong> <br />
+                                          </span>
+                                        ))}
+                                    </span>
                                   </div>
                                 ))}
                               </Box>
