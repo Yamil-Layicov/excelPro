@@ -241,29 +241,34 @@ function TableComponent() {
 
   // Sorting function
   const handleSort = (key) => {
+    console.log("Sıralama başlandı, sütun:", key);
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
       direction = "desc";
     }
-
+  
     setSortConfig({ key, direction });
-
+  
     const sortedData = [...tableData].sort((a, b) => {
+      console.log("Sıralanan məlumatlar:", { a: a[key], b: b[key] });
       if (key === "percentage") {
-        const valueA = isNaN(parseFloat(a[key]))
-          ? -Infinity
-          : parseFloat(a[key]);
-        const valueB = isNaN(parseFloat(b[key]))
-          ? -Infinity
-          : parseFloat(b[key]);
+        const valueA = isNaN(parseFloat(a[key])) ? -Infinity : parseFloat(a[key]);
+        const valueB = isNaN(parseFloat(b[key])) ? -Infinity : parseFloat(b[key]);
         return direction === "asc" ? valueA - valueB : valueB - valueA;
+      } else if (key === "title") {
+        const valueA = a[key] != null ? String(a[key]).toLowerCase() : "";
+        const valueB = b[key] != null ? String(b[key]).toLowerCase() : "";
+        return direction === "asc"
+          ? valueA.localeCompare(valueB, "az")
+          : valueB.localeCompare(valueA, "az");
       } else {
         const dateA = a[key] ? new Date(a[key]) : new Date(0);
         const dateB = b[key] ? new Date(b[key]) : new Date(0);
         return direction === "asc" ? dateA - dateB : dateB - dateA;
       }
     });
-
+  
+    console.log("Sıralanmış məlumatlar:", sortedData.map(row => row.title));
     setTableData(sortedData);
   };
 
@@ -641,7 +646,7 @@ function TableComponent() {
           backgroundColor: "#ffffff",
           maxHeight: "90vh",
           "&::-webkit-scrollbar-thumb": {
-            background: "#F3F5F7",
+            background: "#d9d9d9",
             borderRadius: "10px",
           },
           "&::-webkit-scrollbar": {
@@ -653,7 +658,7 @@ function TableComponent() {
           sx={{
             minWidth: 650,
             "& .MuiTableCell-root": {
-              padding: "12px 8px",
+              padding: "12px 6px",
               fontSize: "0.9rem",
               borderBottom: "1px solid #e0e0e0",
             },
@@ -677,7 +682,22 @@ function TableComponent() {
                 },
               }}
             >
-              <TableCell sx={{ minWidth: 20 }}>Nömrə</TableCell>
+              <TableCell sx={{ minWidth: 20 }}>
+  <Box sx={{ display: "flex", alignItems: "center" }}>
+    Nömrə
+    <IconButton
+      size="small"
+      onClick={() => handleSort("title")}
+      sx={{ color: "#ffffff" }}
+    >
+      {sortConfig.key === "title" && sortConfig.direction === "asc" ? (
+        <ArrowUpwardIcon fontSize="small" />
+      ) : (
+        <ArrowDownwardIcon fontSize="small" />
+      )}
+    </IconButton>
+  </Box>
+</TableCell>
               <TableCell sx={{ minWidth: 250 }}>
                 Strategiya üzrə tədbirlər
               </TableCell>
