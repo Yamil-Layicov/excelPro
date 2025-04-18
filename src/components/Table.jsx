@@ -653,7 +653,7 @@ function TableComponent() {
           sx={{
             minWidth: 650,
             "& .MuiTableCell-root": {
-              padding: "12px 16px",
+              padding: "12px 8px",
               fontSize: "0.9rem",
               borderBottom: "1px solid #e0e0e0",
             },
@@ -677,7 +677,7 @@ function TableComponent() {
                 },
               }}
             >
-              <TableCell sx={{ minWidth: 30 }}>Nömrə</TableCell>
+              <TableCell sx={{ minWidth: 20 }}>Nömrə</TableCell>
               <TableCell sx={{ minWidth: 250 }}>
                 Strategiya üzrə tədbirlər
               </TableCell>
@@ -929,7 +929,7 @@ function TableComponent() {
                                 borderRadius: "7px",
                                 textTransform: "none",
                                 fontSize: "0.75rem",
-                                padding: "4px 8px",
+                                padding: "4px 1px",
                                 "&:hover": {
                                   backgroundColor: "#2e7d32",
                                   color: "#ffffff",
