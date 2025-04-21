@@ -246,14 +246,18 @@ function TableComponent() {
     if (sortConfig.key === key && sortConfig.direction === "asc") {
       direction = "desc";
     }
-  
+
     setSortConfig({ key, direction });
-  
+
     const sortedData = [...tableData].sort((a, b) => {
       console.log("Sıralanan məlumatlar:", { a: a[key], b: b[key] });
       if (key === "percentage") {
-        const valueA = isNaN(parseFloat(a[key])) ? -Infinity : parseFloat(a[key]);
-        const valueB = isNaN(parseFloat(b[key])) ? -Infinity : parseFloat(b[key]);
+        const valueA = isNaN(parseFloat(a[key]))
+          ? -Infinity
+          : parseFloat(a[key]);
+        const valueB = isNaN(parseFloat(b[key]))
+          ? -Infinity
+          : parseFloat(b[key]);
         return direction === "asc" ? valueA - valueB : valueB - valueA;
       } else if (key === "title") {
         const valueA = a[key] != null ? String(a[key]).toLowerCase() : "";
@@ -267,8 +271,11 @@ function TableComponent() {
         return direction === "asc" ? dateA - dateB : dateB - dateA;
       }
     });
-  
-    console.log("Sıralanmış məlumatlar:", sortedData.map(row => row.title));
+
+    console.log(
+      "Sıralanmış məlumatlar:",
+      sortedData.map((row) => row.title)
+    );
     setTableData(sortedData);
   };
 
@@ -683,21 +690,22 @@ function TableComponent() {
               }}
             >
               <TableCell sx={{ minWidth: 20 }}>
-  <Box sx={{ display: "flex", alignItems: "center" }}>
-    Nömrə
-    <IconButton
-      size="small"
-      onClick={() => handleSort("title")}
-      sx={{ color: "#ffffff" }}
-    >
-      {sortConfig.key === "title" && sortConfig.direction === "asc" ? (
-        <ArrowUpwardIcon fontSize="small" />
-      ) : (
-        <ArrowDownwardIcon fontSize="small" />
-      )}
-    </IconButton>
-  </Box>
-</TableCell>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  Nömrə
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSort("title")}
+                    sx={{ color: "#ffffff" }}
+                  >
+                    {sortConfig.key === "title" &&
+                    sortConfig.direction === "asc" ? (
+                      <ArrowUpwardIcon fontSize="small" />
+                    ) : (
+                      <ArrowDownwardIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </Box>
+              </TableCell>
               <TableCell sx={{ minWidth: 250 }}>
                 Strategiya üzrə tədbirlər
               </TableCell>
@@ -797,8 +805,12 @@ function TableComponent() {
                     <TableCell>{formatDate(row.startDate)}</TableCell>
                     <TableCell
                       sx={{
-                        ...(isOverdue && {
-                          backgroundColor: "#ff6a7f",
+                        ...(isOverdue &&
+                          parseFloat(row.percentage) < 100 && {
+                            backgroundColor: "#ff6a7f",
+                          }),
+                        ...(parseFloat(row.percentage) === 100 && {
+                          backgroundColor: "#75cb56",
                         }),
                       }}
                     >
@@ -876,8 +888,17 @@ function TableComponent() {
                                     <span>{note.content}</span>
                                     <span>
                                       {note.changes &&
-                                        [...new Set(note.changes.map((change) => change.updatedBy)),].map((updatedBy) => (
-                                          <span style={{paddingLeft:"5px"}} key={updatedBy}>
+                                        [
+                                          ...new Set(
+                                            note.changes.map(
+                                              (change) => change.updatedBy
+                                            )
+                                          ),
+                                        ].map((updatedBy) => (
+                                          <span
+                                            style={{ paddingLeft: "5px" }}
+                                            key={updatedBy}
+                                          >
                                             <strong>{updatedBy}</strong> <br />
                                           </span>
                                         ))}
